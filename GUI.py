@@ -57,12 +57,12 @@ class GUI:
         
     
     def compute(self):
-        "Alter:" 
-        "Haarfarbe: " 
-        "Augenfarbe:"
+        "Alter: KI" 
+        "Haarfarbe: KI" 
+        "Augenfarbe: BV"
         self.computeEyeColor()
-        "Geschlecht (?): "
-        "Bart:"
+        "Geschlecht: KI"
+        "Bart: "
         
 
 
