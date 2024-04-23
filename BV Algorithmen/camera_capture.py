@@ -9,8 +9,8 @@ class VideoCaptureWithFaceDetection ():
         dif_cascades = ['haarcascade_eye_tree_eyeglasses.xml', 'haarcascade_frontalface_default.xml']
         self.video_capture = cv2.VideoCapture(video_source)
         self.frame = None
+        self.eyes_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + dif_cascades[0])
         self.face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + dif_cascades[1])
-        self.eyes_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + dif_cascades[0])  
         self.thread = threading.Thread(target=self._update_frame)
         self.thread.daemon = True
         self.thread.start()
