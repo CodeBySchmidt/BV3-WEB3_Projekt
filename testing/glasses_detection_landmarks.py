@@ -77,5 +77,5 @@ if __name__ == "__main__":
     predictor_path = "Utils/shape_predictor_68_face_landmarks.dat"
     glasses_detector = GlassesDetector(predictor_path)
 
-    image_path = "img/glasses/2.jpeg"
+    image_path = "img/glasses/1.jpg"
     glasses_detector.display_results(image_path)
