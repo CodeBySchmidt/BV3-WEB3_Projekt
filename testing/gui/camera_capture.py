@@ -3,7 +3,7 @@ import imutils
 import threading
 
 
-class VideoCaptureWithFaceDetection ():
+class VideoCaptureWithFaceDetection:
     
     def __init__(self, video_source=0, kind_of_classifikation=0):
         dif_cascades = ['haarcascade_eye_tree_eyeglasses.xml', 'haarcascade_frontalface_default.xml']
