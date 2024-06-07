@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 import base64
 import signal
 import time
@@ -56,11 +55,11 @@ async def grab_video_frame() -> Response:
 # Definiere benutzerdefinierte CSS-Klassen für die Farben
 ui.add_head_html('''
 <style>
-    .bg-red { background-color: red; }
-    .bg-green { background-color: green; }
-    .bg-blue { background-color: blue; }
-    .bg-yellow { background-color: yellow; }
-    .bg-purple { background-color: purple; }
+    .primär { background-color: #42594C; }
+    .sekundär { background-color: #9BF2BA; }
+    .tertiär { background-color: #BF8D50; }
+    .quartär { background-color: #F2BBB6; }
+    .quintär { background-color: #0D0D0D; }
     .bg-orange { background-color: orange; }
     .bg-cyan { background-color: cyan; }
 </style>
@@ -77,22 +76,21 @@ ui.add_head_html(f'''
 </style>
 ''')
 
+ui.query('body').classes("primär")
 # Erstelle das Grid mit den farbigen Labels
 with (ui.grid(columns=16).classes('w-full gap-2')):
-    ui.label('full').classes('col-span-full border p-1 bg-red h-36')
-
-    with ui.card().classes('col-span-9 h-auto border p-1 bg-blue'):
+    with ui.card().classes('col-span-5 h-auto border p-1 sekundär'):
         ui.label('8')
         ui.button('Add label', on_click=lambda: ui.label('Click!'))
         ui.timer(1.0, lambda: ui.label('Tick!'), once=True)
 
-    with ui.card().classes('col-span-7 h-auto border p-1 bg-yellow'):
-        video_image = ui.interactive_image().classes('w-auto h-auto')
+    with ui.card().classes('col-span-11 h-auto border p-1 tertiär'):
+        video_image = ui.interactive_image().classes('w-auto h-5/6')
         ui.label('Video image')
 
-    ui.label('12').classes('col-span-12 border p-1 bg-yellow')
+    ui.label('12').classes('col-span-12 border p-1 quartär')
 
-    ui.label('4').classes('col-span-4 border p-1 bg-purple')
+    ui.label('4').classes('col-span-4 border p-1 quintär')
 
     ui.label('15').classes('col-[span_15] border p-1 bg-orange')
 
