@@ -11,6 +11,16 @@ import dlib
 from imutils import face_utils
 import webcolors
 
+from skript import *
+
+#
+# ________________________________________________________________________________________________________
+#
+#  Aufbau für den shape_predictor und Methoden zum einzeichnen und zum einbinden in der GUI
+#
+# ________________________________________________________________________________________________________
+#
+
 # Pfad zu deinem shape_predictor_68_face_landmarks.dat
 predictor_path = "../Utils/shape_predictor_68_face_landmarks.dat"
 
@@ -52,16 +62,56 @@ async def grab_video_frame() -> Response:
     jpeg = convert(frame_with_landmarks)
     return Response(content=jpeg, media_type='image/jpeg')
 
+
+gender_result = "None"
+age_result = "None"
+race_result = "None"
+facial_hair_result = "None"
+glasses_result = "None"
+hair_color_result = "None"
+eye_color_result = "None"
+facial_hair_color_result = "None"
+
+
+# Callback-Funktion für Button-Klick
+def button_clicked():
+    gender_result = gender()
+    age_result = age()
+    race_result = race()
+    facial_hair_result = facial_hair()
+    facial_hair_color_result = facial_hair_color()
+    glasses_result = glasses()
+    hair_color_result = hair_color()
+    eye_color_result = eye_color()
+
+    # Label aktualisieren, um den neuen Wert anzuzeigen
+    gender_label.set_text(gender_result)
+    age_label.set_text(age_result)
+    race_label.set_text(race_result)
+    facial_hair_label.set_text(facial_hair_result)
+    facial_hair_color_label.set_text(facial_hair_color_result)
+    glasses_label.set_text(glasses_result)
+    hair_color_label.set_text(hair_color_result)
+    eye_color_label.set_text(eye_color_result)
+
+
+#
+# ________________________________________________________________________________________________________
+#
+#  benutzerdefinierte CSS-Klassen
+#
+# ________________________________________________________________________________________________________
+#
+
+
 # Definiere benutzerdefinierte CSS-Klassen für die Farben
 ui.add_head_html('''
 <style>
-    .primär { background-color: #42594C; }
-    .sekundär { background-color: #9BF2BA; }
-    .tertiär { background-color: #BF8D50; }
-    .quartär { background-color: #F2BBB6; }
+    .primär { background-color: #262626; }
+    .sekundär { background-color: #404040; }
+    .tertiär { background-color: #737373; }
+    .quartär { background-color: #A6A6A6; }
     .quintär { background-color: #0D0D0D; }
-    .bg-orange { background-color: orange; }
-    .bg-cyan { background-color: cyan; }
 </style>
 ''')
 
@@ -76,32 +126,99 @@ ui.add_head_html(f'''
 </style>
 ''')
 
-ui.query('body').classes("primär")
+#
+# ________________________________________________________________________________________________________
+#
+#  GUI Aufbau
+#
+# ________________________________________________________________________________________________________
+#
+
+
+ui.query("body").classes("primär")
+
 # Erstelle das Grid mit den farbigen Labels
-with (ui.grid(columns=16).classes('w-full gap-2')):
-    with ui.card().classes('col-span-5 h-auto border p-1 sekundär'):
-        ui.label('8')
-        ui.button('Add label', on_click=lambda: ui.label('Click!'))
-        ui.timer(1.0, lambda: ui.label('Tick!'), once=True)
+with ui.grid(rows=6, columns=16).classes("gap-5 w-full p-5").style("height: 95vh;"):
 
-    with ui.card().classes('col-span-11 h-auto border p-1 tertiär'):
-        video_image = ui.interactive_image().classes('w-auto h-5/6')
-        ui.label('Video image')
+    with ui.element("container_logo").classes("row-start-1 row-span-1 col-span-5 h-auto rounded sekundär flex justify-center items-center overflow-hidden"):
+        ui.label("Logo").classes("text-white flex justify-center items-center text-4xl")
 
-    ui.label('12').classes('col-span-12 border p-1 quartär')
+    with ui.element("container_outputs").classes("row-start-2 row-span-4 col-span-5 rounded"):
+        with ui.grid(rows=4, columns=2).classes("h-full w-full gap-5"):
 
-    ui.label('4').classes('col-span-4 border p-1 quintär')
+            # Erste Zeile
+            with ui.element("container_output_1").classes("rounded col-span-2 row-start-1 grid grid-cols-2 gap-2 sekundär overflow-hidden"):
+                # output_1 links
+                with ui.element("output_1").classes("col-start-1 col-span-1 row-start-1 row-span-1 flex flex-col justify-center items-start pl-10"):
+                    eye_color_label = ui.label(f"{eye_color_result}").classes("text-4xl").style("color: white;")
+                    ui.label("Eye Color").classes("text-lg").style("color: white;")
 
-    ui.label('15').classes('col-[span_15] border p-1 bg-orange')
+                # output_1_color rechts
+                with ui.element("output_1_color").classes("col-start-2 col-span-1 row-start-1 row-span-1 flex justify-center items-center"):
+                    ui.label("Color").classes("p-5 rounded bg-brown flex justify-center items-center").style("height: 80%; width: 80%")
 
-    ui.label('1').classes('col-span-1 border p-1 bg-cyan')
+            # Zweite Zeile
+            with ui.element("container_output_2").classes("rounded col-span-2 row-start-2 grid grid-cols-2 gap-2 sekundär overflow-hidden"):
+                # output_2 links
+                with ui.element("output_2").classes("col-start-1 col-span-1 row-start-1 row-span-1 flex flex-col justify-center items-start pl-10"):
+                    facial_hair_color_label = ui.label(f"{facial_hair_color_result}").classes("text-4xl").style("color: white;")
+                    ui.label("Facial Hair Color").classes("text-lg").style("color: white;")
 
-    # Füge zusätzliche Labels mit Farben aus webcolors.CSS3_HEX_TO_NAMES hinzu, zum testen
-    ui.label('DarkSlateGray').classes('col-span-full border p-1 h-10 bg-darkslategray')
+                # output_2_color rechts
+                with ui.element("output_2_color").classes("col-start-2 col-span-1 row-start-1 row-span-1 flex justify-center items-center"):
+                    ui.label("Color").classes("p-5 rounded bg-brown flex justify-center items-center").style("height: 80%; width: 80%")
 
-    ui.label('Silver').classes('col-span-full border p-1 h-14 bg-silver')
+            # Dritte Zeile
+            with ui.element("container_output_3").classes("rounded col-span-2 row-start-3 grid grid-cols-2 gap-2 sekundär overflow-hidden"):
+                # output_3 links
+                with ui.element("output_3").classes("col-start-1 col-span-1 row-start-1 row-span-1 flex flex-col justify-center items-start pl-10"):
+                    hair_color_label = ui.label(f"{hair_color_result}").classes("text-4xl").style("color: white;")
+                    ui.label("Hair Color").classes("text-lg").style("color: white;")
 
-    ui.label('Gainsboro').classes('col-span-full border p-1 h-16 bg-gainsboro')
+                # output_3_color rechts
+                with ui.element("output_3_color").classes("col-start-2 col-span-1 row-start-1 row-span-1 flex justify-center items-center"):
+                    ui.label("Color").classes("p-5 rounded bg-brown flex justify-center items-center").style("height: 80%; width: 80%")
+
+            # Vierte Zeile # output_4 links
+            with ui.element("output_4").classes("col-start-1 col-span-1 row-start-4 row-span-1 rounded sekundär overflow-hidden flex flex-col justify-center items-start pl-10"):
+                facial_hair_label = ui.label(f"{facial_hair_result}").classes("text-4xl").style("color: white;")
+                ui.label("Facial Hair").classes("text-lg").style("color: white;")
+
+            # Vierte Zeile # output_5 rechts
+            with ui.element("output_5").classes("col-start-2 col-span-1 row-start-4 row-span-1 rounded sekundär overflow-hidden flex flex-col justify-center items-start pl-10"):
+                glasses_label = ui.label(f"{glasses_result}").classes("text-4xl").style("color: white;")
+                ui.label("Glasses").classes("text-lg").style("color: white;")
+
+    with ui.element("container_camera").classes("col-span-11 row-start-1 row-span-5 h-auto rounded p-1 sekundär overflow-hidden"):
+        video_image = ui.interactive_image().classes("h-full w-full object-contain")
+
+    with ui.element("container_ki").classes("col-span-12 row-start-6 rounded overflow-hidden"):
+        with ui.grid(rows=1, columns=3).classes("h-full w-full gap-5"):
+
+            # Erste Spalte -> Age
+            with ui.element("container_output_age").classes("rounded col-span-4 row-start-1 grid grid-cols-2 gap-2 sekundär overflow-hidden"):
+                # output_age
+                with ui.element("output_age").classes("col-start-1 col-span-1 row-start-1 row-span-1 flex flex-col justify-center items-start pl-10"):
+                    age_label = ui.label(f"{age_result}").classes("text-4xl").style("color: white;")
+                    ui.label("Age").classes("text-lg").style("color: white;")
+
+            # Zweite Spalte -> Race
+            with ui.element("container_output_race").classes("rounded col-span-4 row-start-1 grid grid-cols-2 gap-2 sekundär overflow-hidden"):
+                # output_race
+                with ui.element("output_race").classes("col-start-1 col-span-1 row-start-1 row-span-1 flex flex-col justify-center items-start pl-10"):
+                    race_label = ui.label(f"{race_result}").classes("text-4xl").style("color: white;")
+                    ui.label("Race").classes("text-lg").style("color: white;")
+
+            # Dritte Spalte -> Gender
+            with ui.element("container_output_gender").classes("rounded col-span-4 row-start-1 grid grid-cols-2 gap-2 sekundär overflow-hidden"):
+                # output_gender
+                with ui.element("output_gender").classes("col-start-1 col-span-1 row-start-1 row-span-1 flex flex-col justify-center items-start pl-10"):
+                    gender_label = ui.label(f"{gender_result}").classes("text-4xl").style("color: white;")
+                    ui.label("Gender").classes("text-lg").style("color: white;")
+
+    with ui.element("container_button").classes("col-span-4 row-start-6 p-1 flex justify-end items-end overflow-hidden"):
+        button = ui.button("Klick mich!", on_click=button_clicked)
+
 
 # A timer constantly updates the source of the image.
 # Because data from same paths are cached by the browser,
@@ -122,7 +239,9 @@ def handle_sigint(signum, frame) -> None:
 async def cleanup() -> None:
     video_capture.release()
 
+
 app.on_shutdown(cleanup)
+
 # We also need to disconnect clients when the app is stopped with Ctrl+C,
 # because otherwise they will keep requesting images which lead to unfinished subprocesses blocking the shutdown.
 signal.signal(signal.SIGINT, handle_sigint)
