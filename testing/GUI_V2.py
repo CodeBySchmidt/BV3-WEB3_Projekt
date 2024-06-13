@@ -3,12 +3,14 @@ import tkinter as tk
 from PIL import Image, ImageTk
 from video_landmarks import FaceLandmarkDetector
 
+#Hallo anne (^-^)/
 
 class GUI:
     def __init__(self, window, video_source=0):
         self.window = window
         self.window.title("Video Capture")
-        self.window.configure(bg="#f5f5f5")
+        self.window.configure(
+        bg="#f5f5f5")
         self.window.geometry("1000x700")
 
         predictor_path = "Utils/shape_predictor_68_face_landmarks.dat"
