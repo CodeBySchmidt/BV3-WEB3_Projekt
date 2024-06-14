@@ -1,17 +1,17 @@
 def eye_color() -> str:
-    return "Light Brown"
+    return "Olive"
 
 
 def hair_color() -> str:
-    return "Brown"
+    return "SaddleBrown"
 
 
 def facial_hair() -> str:
-    return "No"
+    return "Yes"
 
 
 def facial_hair_color() -> str:
-    return "None"
+    return "Fuchsia"
 
 
 def glasses() -> str:

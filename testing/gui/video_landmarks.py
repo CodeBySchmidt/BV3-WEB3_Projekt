@@ -3,7 +3,7 @@ import time
 import numpy as np
 import dlib
 import cv2
-import webcolors
+import webcolors_print
 import matplotlib.pyplot as plt
 from imutils import face_utils
 
