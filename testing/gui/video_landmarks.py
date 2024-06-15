@@ -218,13 +218,14 @@ class FaceLandmarkDetector:
         else:
             print("Failed to capture image.")
 
+    # take_screenshot braucht man eventuell nicht mehr
     def take_screenshot(self, file_path):
         time.sleep(5)  # Wait for 5 seconds
         self.save_screenshot(file_path)
 
     def show_live_video(self):
         screenshot_path = "screenshot.jpg"
-        screenshot_thread = threading.Thread(target=self.take_screenshot, args=(screenshot_path,))
+        screenshot_thread = threading.Thread(target=self.save_screenshot, args=(screenshot_path,))
         screenshot_thread.start()
 
         start_time = time.time()
@@ -256,6 +257,7 @@ class FaceLandmarkDetector:
             img_element.source = f'data:image/jpeg;base64,{buffer.tobytes().encode("base64").decode()}'
             time.sleep(0.1)
 
+
 class AgeGenderDetector:
 
     def __init__(self, predictor_path):
@@ -274,15 +276,15 @@ class AgeGenderDetector:
             x2 = face.right()
             y2 = face.bottom()
             faceBoxes.append([x1, y1, x2, y2])
-            
+
         return faceBoxes
 
     def genger_age_detection(self):
-        
-        ageProto = "C:/Users/Mauri/Downloads/Maurice/Maurice/age_deploy.prototxt"
-        ageModel = "C:/Users/Mauri/Downloads/Maurice/Maurice/age_net.caffemodel"
-        genderProto = "C:/Users/Mauri/Downloads/Maurice/Maurice/gender_deploy.prototxt"
-        genderModel = "C:/Users/Mauri/Downloads/Maurice/Maurice/gender_net.caffemodel"
+
+        ageProto = "../Utils/age_deploy.prototxt"
+        ageModel = "../Utils/age_net.caffemodel"
+        genderProto = "../Utils/gender_deploy.prototxt"
+        genderModel = "../Utils/gender_net.caffemodel"
 
         MODEL_MEAN_VALUES = (78.4263377603, 87.7689143744, 114.895847746)
         ageList = ['(0-2)', '(4-6)', '(8-12)', '(15-20)', '(25-32)', '(38-43)', '(48-53)', '(60-100)']
@@ -292,7 +294,7 @@ class AgeGenderDetector:
         genderNet = cv2.dnn.readNet(genderModel, genderProto)
 
         detector = dlib.get_frontal_face_detector()
-        predictor_path = "C:/Users/Mauri/Downloads/Maurice/Maurice/shape_predictor_68_face_landmarks.dat"
+        predictor_path = "../Utils/shape_predictor_68_face_landmarks.dat"
         predictor = dlib.shape_predictor(predictor_path)
 
         video = cv2.VideoCapture(self.file_path)
@@ -305,14 +307,15 @@ class AgeGenderDetector:
                 break
 
             faceBoxes = self.highlightFace(detector, frame)
-            
+
             if not faceBoxes:
                 print("No face detected")
 
             for faceBox in faceBoxes:
                 face = frame[max(0, faceBox[1] - padding):
-                            min(faceBox[3] + padding, frame.shape[0] - 1), max(0, faceBox[0] - padding)
-                                                                            :min(faceBox[2] + padding, frame.shape[1] - 1)]
+                             min(faceBox[3] + padding, frame.shape[0] - 1), max(0, faceBox[0] - padding)
+                                                                            :min(faceBox[2] + padding,
+                                                                                 frame.shape[1] - 1)]
 
                 blob = cv2.dnn.blobFromImage(face, 1.0, (227, 227), MODEL_MEAN_VALUES, swapRB=False)
                 genderNet.setInput(blob)
@@ -327,48 +330,119 @@ class AgeGenderDetector:
 
             self.gender = gender
             self.age = age
-        return 
+        return
+
+
+class GenderAgeDetector:
+    def __init__(self, age_model, age_proto, gender_model, gender_proto, predictor_path):
+        self.ageNet = cv2.dnn.readNet(age_model, age_proto)
+        self.genderNet = cv2.dnn.readNet(gender_model, gender_proto)
+        self.detector = dlib.get_frontal_face_detector()
+        self.predictor = dlib.shape_predictor(predictor_path)
+        self.MODEL_MEAN_VALUES = (78.4263377603, 87.7689143744, 114.895847746)
+        self.ageList = ['(0-2)', '(4-6)', '(8-12)', '(15-20)', '(25-32)', '(38-43)', '(48-53)', '(60-100)']
+        self.genderList = ['Male', 'Female']
+        self.padding = 20
+
+    def highlight_face(self, frame):
+        frame_opencv_dnn = frame.copy()
+        gray = cv2.cvtColor(frame_opencv_dnn, cv2.COLOR_BGR2GRAY)
+
+        faces = self.detector(gray)
+        face_boxes = []
+
+        for face in faces:
+            x1 = face.left()
+            y1 = face.top()
+            x2 = face.right()
+            y2 = face.bottom()
+            face_boxes.append([x1, y1, x2, y2])
+
+            shape = self.predictor(gray, face)
+
+            for i in range(0, 68):
+                x = shape.part(i).x
+                y = shape.part(i).y
+                cv2.circle(frame_opencv_dnn, (x, y), 2, (0, 255, 0), -1)
+
+        return frame_opencv_dnn, face_boxes
+
+    def detect_age_gender(self, frame, face_box):
+        face = frame[max(0, face_box[1] - self.padding):
+                     min(face_box[3] + self.padding, frame.shape[0] - 1), max(0, face_box[0] - self.padding)
+                                                                          :min(face_box[2] + self.padding,
+                                                                               frame.shape[1] - 1)]
+
+        blob = cv2.dnn.blobFromImage(face, 1.0, (227, 227), self.MODEL_MEAN_VALUES, swapRB=False)
+        self.genderNet.setInput(blob)
+        gender_preds = self.genderNet.forward()
+        gender = self.genderList[gender_preds[0].argmax()]
+
+        self.ageNet.setInput(blob)
+        age_preds = self.ageNet.forward()
+        age = self.ageList[age_preds[0].argmax()]
+
+        return gender, age
+
+    def process_image(self, image_path):
+        frame = cv2.imread(image_path)
+        if frame is None:
+            print(f"Error: Unable to open image file {image_path}")
+            return
+
+        result_img, face_boxes = self.highlight_face(frame)
+        if not face_boxes:
+            print("No face detected")
+
+        for faceBox in face_boxes:
+            gender, age = self.detect_age_gender(frame, faceBox)
+            # print(f'Gender: {gender}')
+            # print(f'Age: {age[1:-1]} years')
+
+            # cv2.putText(result_img, f'{gender}, {age}', (faceBox[0], faceBox[1] - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.8,
+            #             (0, 255, 255), 2, cv2.LINE_AA)
+
+            return gender, age
 
 
 
 
-        
-if __name__ == "__main__":
-    try:
-        predictor_path = "C:/Users/Mauri/Desktop/BV3-WEB3_Projekt/testing/Utils/shape_predictor_68_face_landmarks.dat"
-        selected_camera_index = int(input("Geben Sie den Index der Kamera ein, die verwendet werden soll (0 oder 1): "))
-
-        detector = FaceDetector(predictor_path)
-        glasses_detector = GlassesDetector(predictor_path)
-        eye_color_detector = EyeColorDetector(predictor_path)
-        face_landmark_detector = FaceLandmarkDetector(predictor_path, camera_index=selected_camera_index)
-
-    # Starte das Live Video
-        face_landmark_detector.show_live_video()
-        print()
-        time.sleep(2)
-
-    # Brillen - Erkennung wird ausgeführt
-        seconds = 3
-        print(f"Die Methode {"glasses_detector.display_results()"} wird aufgerufen...")
-        time.sleep(2)
-        # Schleife für die Ausgabe
-        for i in range(seconds):
-            print(f"Berechnung dauert noch {seconds - i} Sekunden....")
-            time.sleep(1)
-        print(f"Ergebnis ist: " + glasses_detector.display_results("screenshot.jpg"))
-        print()
-        time.sleep(2)
-
-    # Augenfarben - Erkennung wird ausgeführt
-        seconds = 3
-        print(f"Die Methode {"eye_color_detector.detect_eye_color()"} wird aufgerufen...")
-        time.sleep(2)
-        # Schleife für die Ausgabe
-        for i in range(seconds):
-            print(f"Berechnung dauert noch {seconds - i} Sekunden...")
-            time.sleep(1)
-        print(f"Ergebnis ist: " + eye_color_detector.detect_eye_color("screenshot.jpg"))
-
-    except Exception as e:
-        print(f"Fehler beim Ausführen: {e}")
+# if __name__ == "__main__":
+#     try:
+#         predictor_path = "../Utils/shape_predictor_68_face_landmarks.dat"
+#         selected_camera_index = int(input("Geben Sie den Index der Kamera ein, die verwendet werden soll (0 oder 1): "))
+#
+#         detector = FaceDetector(predictor_path)
+#         glasses_detector = GlassesDetector(predictor_path)
+#         eye_color_detector = EyeColorDetector(predictor_path)
+#         face_landmark_detector = FaceLandmarkDetector(predictor_path, camera_index=selected_camera_index)
+#
+#     # Starte das Live Video
+#         face_landmark_detector.show_live_video()
+#         print()
+#         time.sleep(2)
+#
+#     # Brillen - Erkennung wird ausgeführt
+#         seconds = 3
+#         print(f"Die Methode {"glasses_detector.display_results()"} wird aufgerufen...")
+#         time.sleep(2)
+#         # Schleife für die Ausgabe
+#         for i in range(seconds):
+#             print(f"Berechnung dauert noch {seconds - i} Sekunden....")
+#             time.sleep(1)
+#         print(f"Ergebnis ist: " + glasses_detector.display_results("screenshot.jpg"))
+#         print()
+#         time.sleep(2)
+#
+#     # Augenfarben - Erkennung wird ausgeführt
+#         seconds = 3
+#         print(f"Die Methode {"eye_color_detector.detect_eye_color()"} wird aufgerufen...")
+#         time.sleep(2)
+#         # Schleife für die Ausgabe
+#         for i in range(seconds):
+#             print(f"Berechnung dauert noch {seconds - i} Sekunden...")
+#             time.sleep(1)
+#         print(f"Ergebnis ist: " + eye_color_detector.detect_eye_color("screenshot.jpg"))
+#
+#     except Exception as e:
+#         print(f"Fehler beim Ausführen: {e}")

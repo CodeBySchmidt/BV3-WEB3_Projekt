@@ -1,20 +1,32 @@
-import time
-
-from video_landmarks import FaceLandmarkDetector, EyeColorDetector, GlassesDetector, AgeGenderDetector
-
-predictor_path = "C:/Users/Mauri/Desktop/BV3-WEB3_Projekt/testing/Utils/shape_predictor_68_face_landmarks.dat"
+from video_landmarks import FaceLandmarkDetector, EyeColorDetector, GlassesDetector, GenderAgeDetector
 
 
-def get_screenshot():
-    detector = FaceLandmarkDetector(predictor_path)
-    image = detector.take_screenshot("C:/Users/Mauri/Desktop/BV3-WEB3_Projekt/screenshot.jpg")
-    return image
+image_path = "current_frame.jpg"  # Hier den Pfad zu deinem Bild einfügen
+
+age_proto = "../Utils/age_deploy.prototxt"
+age_model = "../Utils/age_net.caffemodel"
+gender_proto = "../Utils/gender_deploy.prototxt"
+gender_model = "../Utils/gender_net.caffemodel"
+predictor_path = "../Utils/shape_predictor_68_face_landmarks.dat"
+
+
+# Wird eventuell gar nicht benötigt
+# def get_screenshot():
+#     detector = FaceLandmarkDetector(predictor_path)
+#     image = detector.take_screenshot("screenshot.jpg")
+#     return image
 
 
 def eye_color() -> str:
     eye_color_detector = EyeColorDetector(predictor_path)
-    result_eye_color = eye_color_detector.detect_eye_color("C:/Users/Mauri/Desktop/BV3-WEB3_Projekt/screenshot.jpg")
+    result_eye_color = eye_color_detector.detect_eye_color(image_path)
     return result_eye_color
+
+
+def glasses() -> str:
+    glasses_detector = GlassesDetector(predictor_path)
+    result_glasses = glasses_detector.display_results(image_path)
+    return result_glasses
 
 
 def hair_color() -> str:
@@ -29,23 +41,13 @@ def facial_hair_color() -> str:
     return "Fuchsia"
 
 
-def glasses() -> str:
-    glasses_detector = GlassesDetector(predictor_path)
-    result_glasses = glasses_detector.display_results("C:/Users/Mauri/Desktop/BV3-WEB3_Projekt/screenshot.jpg")
-    return result_glasses
+def gender_age() -> str:
+    detector = GenderAgeDetector(age_model, age_proto, gender_model, gender_proto, predictor_path)
+    gender_result = detector.process_image(image_path)[0]
+    age_result = detector.process_image(image_path)[1]
+    return gender_result, age_result
 
-
-def age() -> str:
-    age_gender_detector = AgeGenderDetector("C:/Users/Mauri/Desktop/BV3-WEB3_Projekt/screenshot.jpg")
-    age_gender_detector.genger_age_detection()    
-    return age_gender_detector.age
 
 def race() -> str:
     return "European"
-
-
-def gender() -> str:
-    age_gender_detector = AgeGenderDetector("C:/Users/Mauri/Desktop/BV3-WEB3_Projekt/screenshot.jpg")
-    age_gender_detector.genger_age_detection()    
-    return age_gender_detector.gender
 
