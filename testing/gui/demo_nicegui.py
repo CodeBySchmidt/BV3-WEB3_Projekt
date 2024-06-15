@@ -1,7 +1,7 @@
 import base64
 import signal
 import time
-
+import threading
 import cv2
 import numpy as np
 from fastapi import Response
@@ -23,7 +23,7 @@ from skript import *
 #
 
 # Pfad zu deinem shape_predictor_68_face_landmarks.dat
-predictor_path = "../Utils/shape_predictor_68_face_landmarks.dat"
+predictor_path = "C:/Users/Mauri/Desktop/BV3-WEB3_Projekt/testing/Utils/shape_predictor_68_face_landmarks.dat"
 
 # In case you don't have a webcam, this will provide a black placeholder image.
 black_1px = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAAXNSR0IArs4c6QAAAA1JREFUGFdjYGBg+A8AAQQBAHAgZQsAAAAASUVORK5CYII='
@@ -54,7 +54,11 @@ def detect_and_draw_landmarks(frame):
 
 @app.get('/video/frame')
 # Thanks to FastAPI's `app.get`` it is easy to create a web route which always provides the latest image from OpenCV.
+
+    
 async def grab_video_frame() -> Response:
+    screenshot_thread = threading.Thread(getScreenshot())
+    screenshot_thread.start()
     ret, frame = video_capture.read()
     if not ret:
         return placeholder
@@ -76,6 +80,7 @@ facial_hair_color_result = "None"
 
 # Callback-Funktion für Button-Klick
 def button_clicked():
+    
     gender_result = gender()
     age_result = age()
     race_result = race()

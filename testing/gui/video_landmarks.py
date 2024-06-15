@@ -3,7 +3,7 @@ import time
 import numpy as np
 import dlib
 import cv2
-import webcolors_print
+import webcolors
 import matplotlib.pyplot as plt
 from imutils import face_utils
 
@@ -166,12 +166,12 @@ class EyeColorDetector:
         # cv2.destroyAllWindows()
         roi_eye_rgb = cv2.cvtColor(roi_eye, cv2.COLOR_BGR2RGB)
         detected_color_rgb = cv2.cvtColor(detected_color, cv2.COLOR_BGR2RGB)
-        plt.imshow(detected_color_rgb)
-        plt.title("Detected Color")
-        plt.show()
-        plt.imshow(roi_eye_rgb)
-        plt.title("Eye Detected")
-        plt.show()
+        # plt.imshow(detected_color_rgb)
+        # plt.title("Detected Color")
+        # plt.show()
+        # plt.imshow(roi_eye_rgb)
+        # plt.title("Eye Detected")
+        # plt.show()
         return color_name
 
 
@@ -214,6 +214,7 @@ class FaceLandmarkDetector:
             frame_without_circles = self.detect_and_draw_landmarks(frame, draw_circles=False)
             cv2.imwrite(file_path, frame_without_circles)
             print(f"Screenshot saved to {file_path}")
+            return frame_without_circles
         else:
             print("Failed to capture image.")
 
@@ -258,19 +259,19 @@ class FaceLandmarkDetector:
 
 # if __name__ == "__main__":
 #     try:
-#         predictor_path = "Utils/shape_predictor_68_face_landmarks.dat"
+#         predictor_path = "C:/Users/Mauri/Desktop/BV3-WEB3_Projekt/testing/Utils/shape_predictor_68_face_landmarks.dat"
 #         selected_camera_index = int(input("Geben Sie den Index der Kamera ein, die verwendet werden soll (0 oder 1): "))
-#
+
 #         detector = FaceDetector(predictor_path)
 #         glasses_detector = GlassesDetector(predictor_path)
 #         eye_color_detector = EyeColorDetector(predictor_path)
 #         face_landmark_detector = FaceLandmarkDetector(predictor_path, camera_index=selected_camera_index)
-#
+
 #     # Starte das Live Video
 #         face_landmark_detector.show_live_video()
 #         print()
 #         time.sleep(2)
-#
+
 #     # Brillen - Erkennung wird ausgeführt
 #         seconds = 3
 #         print(f"Die Methode {"glasses_detector.display_results()"} wird aufgerufen...")
@@ -282,7 +283,7 @@ class FaceLandmarkDetector:
 #         print(f"Ergebnis ist: " + glasses_detector.display_results("screenshot.jpg"))
 #         print()
 #         time.sleep(2)
-#
+
 #     # Augenfarben - Erkennung wird ausgeführt
 #         seconds = 3
 #         print(f"Die Methode {"eye_color_detector.detect_eye_color()"} wird aufgerufen...")
@@ -292,6 +293,6 @@ class FaceLandmarkDetector:
 #             print(f"Berechnung dauert noch {seconds - i} Sekunden...")
 #             time.sleep(1)
 #         print(f"Ergebnis ist: " + eye_color_detector.detect_eye_color("screenshot.jpg"))
-#
+
 #     except Exception as e:
 #         print(f"Fehler beim Ausführen: {e}")
