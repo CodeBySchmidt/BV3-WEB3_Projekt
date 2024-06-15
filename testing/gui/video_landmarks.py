@@ -39,12 +39,12 @@ class GlassesDetector(FaceDetector):
         y_max = landmarks[31][1]
 
         img_cropped = img[y_min:y_max, x_min:x_max]
-        plt.imshow(img)
-        plt.title("Input Image")
-        plt.show()
-        plt.imshow(img_cropped)
-        plt.title("Cropped Image")
-        plt.show()
+        # plt.imshow(img)
+        # plt.title("Input Image")
+        # plt.show()
+        # plt.imshow(img_cropped)
+        # plt.title("Cropped Image")
+        # plt.show()
 
         return img_cropped
 
@@ -53,13 +53,13 @@ class GlassesDetector(FaceDetector):
         img_blur = cv2.GaussianBlur(img_cropped, (9, 9), sigmaX=0, sigmaY=0)
         edges = cv2.Canny(image=img_blur, threshold1=100, threshold2=200)
 
-        plt.imshow(img_blur)
-        plt.title("Blur Image")
-        plt.show()
-
-        plt.imshow(edges, cmap='gray')
-        plt.title("Edges Image")
-        plt.show()
+        # plt.imshow(img_blur)
+        # plt.title("Blur Image")
+        # plt.show()
+        #
+        # plt.imshow(edges, cmap='gray')
+        # plt.title("Edges Image")
+        # plt.show()
 
         edges_center = edges.T[(int(len(edges.T) / 2))]
 
@@ -71,9 +71,9 @@ class GlassesDetector(FaceDetector):
     def display_results(self, img):
         glasses = self.detect_glasses(img)
         if glasses:
-            return "Trägt Brille"
+            return "Yes"
         else:
-            return "Keine Brille"
+            return "No"
 
 
 class EyeColorDetector:

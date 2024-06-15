@@ -36,43 +36,42 @@ detector = dlib.get_frontal_face_detector()
 predictor = dlib.shape_predictor(predictor_path)
 frame_counter = 0
 
+
 def convert(frame: np.ndarray) -> bytes:
     _, imencode_image = cv2.imencode('.jpg', frame)
     return imencode_image.tobytes()
 
 
-def detect_and_draw_landmarks(frame):
+def detect_and_draw_landmarks(frame, draw_landmarks=True):
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     rects = detector(gray, 0)
     for rect in rects:
         shape = predictor(gray, rect)
         shape = face_utils.shape_to_np(shape)
-        for (x, y) in shape:
-            cv2.circle(frame, (x, y), 2, (0, 255, 0), -1)
+
+        if draw_landmarks:
+            for (x, y) in shape:
+                cv2.circle(frame, (x, y), 2, (0, 255, 0), -1)
+
     return frame
 
 
 @app.get('/video/frame')
 # Thanks to FastAPI's `app.get`` it is easy to create a web route which always provides the latest image from OpenCV.
-
-    
-async def grab_video_frame() -> Response: 
-    # screenshot_thread = threading.Thread(getScreenshot())
-    # screenshot_thread.start()
+async def grab_video_frame() -> Response:
     global frame_counter
     ret, frame = video_capture.read()
     if not ret:
         return placeholder
     frame_counter += 1
-    
-    frame_with_landmarks = detect_and_draw_landmarks(frame)
+
     if frame_counter % 50 == 0:
-        cv2.imwrite("screenshot_DEMO.jpg", frame)
-        jpeg = convert(frame_with_landmarks)
+        cv2.imwrite("screenshot.jpg", detect_and_draw_landmarks(frame, False))
+        jpeg = convert(detect_and_draw_landmarks(frame))
         print(frame_counter)
         return Response(content=jpeg, media_type='image/jpeg')
     else:
-        jpeg = convert(frame_with_landmarks)
+        jpeg = convert(detect_and_draw_landmarks(frame))
         return Response(content=jpeg, media_type='image/jpeg')
 
 
@@ -126,7 +125,7 @@ def get_color_name_or_hex(input_value):
 
         if hex_color in webcolors.CSS3_HEX_TO_NAMES:
             color_name = webcolors.CSS3_HEX_TO_NAMES[hex_color]
-            print(f"Hex: {hex_color} passender Name: {color_name}")
+            # print(f"Hex: {hex_color} passender Name: {color_name}")
             return color_name
         else:
             print(f"Hex: {hex_color} ist nicht findbar in CSS3_HEX_TO_NAMES.")
@@ -135,7 +134,7 @@ def get_color_name_or_hex(input_value):
         color_name = input_value.lower()
         if color_name in webcolors.CSS3_NAMES_TO_HEX:
             hex_color = webcolors.CSS3_NAMES_TO_HEX[color_name]
-            print(f"Name: {color_name} passender Hex: {hex_color}")
+            # print(f"Name: {color_name} passender Hex: {hex_color}")
             return hex_color
         else:
             print(f"Name {color_name} ist nicht findbar in CSS3_NAMES_TO_HEX.")
