@@ -2,7 +2,7 @@ import time
 
 from video_landmarks import FaceLandmarkDetector, EyeColorDetector, FaceDetector, GlassesDetector 
 
-predictor_path = "C:/Users/Mauri/Desktop/BV3-WEB3_Projekt/testing/Utils/shape_predictor_68_face_landmarks.dat"
+predictor_path = "../Utils/shape_predictor_68_face_landmarks.dat"
 def getScreenshot():
     detector = FaceLandmarkDetector(predictor_path)
     image = detector.take_screenshot("screenshot.jpg")

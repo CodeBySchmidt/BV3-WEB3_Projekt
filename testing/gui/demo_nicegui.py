@@ -23,7 +23,7 @@ from skript import *
 #
 
 # Pfad zu deinem shape_predictor_68_face_landmarks.dat
-predictor_path = "C:/Users/Mauri/Desktop/BV3-WEB3_Projekt/testing/Utils/shape_predictor_68_face_landmarks.dat"
+predictor_path = "../Utils/shape_predictor_68_face_landmarks.dat"
 
 # In case you don't have a webcam, this will provide a black placeholder image.
 black_1px = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAAXNSR0IArs4c6QAAAA1JREFUGFdjYGBg+A8AAQQBAHAgZQsAAAAASUVORK5CYII='
@@ -67,7 +67,7 @@ async def grab_video_frame() -> Response:
     
     frame_with_landmarks = detect_and_draw_landmarks(frame)
     if frame_counter % 50 == 0:
-        cv2.imwrite("screenshot.jpg", frame)
+        cv2.imwrite("screenshot_DEMO.jpg", frame)
         jpeg = convert(frame_with_landmarks)
         print(frame_counter)
         return Response(content=jpeg, media_type='image/jpeg')

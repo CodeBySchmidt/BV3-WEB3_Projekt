@@ -257,42 +257,42 @@ class FaceLandmarkDetector:
             time.sleep(0.1)
 
 
-# if __name__ == "__main__":
-#     try:
-#         predictor_path = "C:/Users/Mauri/Desktop/BV3-WEB3_Projekt/testing/Utils/shape_predictor_68_face_landmarks.dat"
-#         selected_camera_index = int(input("Geben Sie den Index der Kamera ein, die verwendet werden soll (0 oder 1): "))
+if __name__ == "__main__":
+    try:
+        predictor_path = "../Utils/shape_predictor_68_face_landmarks.dat"
+        selected_camera_index = int(input("Geben Sie den Index der Kamera ein, die verwendet werden soll (0 oder 1): "))
 
-#         detector = FaceDetector(predictor_path)
-#         glasses_detector = GlassesDetector(predictor_path)
-#         eye_color_detector = EyeColorDetector(predictor_path)
-#         face_landmark_detector = FaceLandmarkDetector(predictor_path, camera_index=selected_camera_index)
+        detector = FaceDetector(predictor_path)
+        glasses_detector = GlassesDetector(predictor_path)
+        eye_color_detector = EyeColorDetector(predictor_path)
+        face_landmark_detector = FaceLandmarkDetector(predictor_path, camera_index=selected_camera_index)
 
-#     # Starte das Live Video
-#         face_landmark_detector.show_live_video()
-#         print()
-#         time.sleep(2)
+    # Starte das Live Video
+        face_landmark_detector.show_live_video()
+        print()
+        time.sleep(2)
 
-#     # Brillen - Erkennung wird ausgeführt
-#         seconds = 3
-#         print(f"Die Methode {"glasses_detector.display_results()"} wird aufgerufen...")
-#         time.sleep(2)
-#         # Schleife für die Ausgabe
-#         for i in range(seconds):
-#             print(f"Berechnung dauert noch {seconds - i} Sekunden....")
-#             time.sleep(1)
-#         print(f"Ergebnis ist: " + glasses_detector.display_results("screenshot.jpg"))
-#         print()
-#         time.sleep(2)
+    # Brillen - Erkennung wird ausgeführt
+        seconds = 3
+        print(f"Die Methode {"glasses_detector.display_results()"} wird aufgerufen...")
+        time.sleep(2)
+        # Schleife für die Ausgabe
+        for i in range(seconds):
+            print(f"Berechnung dauert noch {seconds - i} Sekunden....")
+            time.sleep(1)
+        print(f"Ergebnis ist: " + glasses_detector.display_results("screenshot.jpg"))
+        print()
+        time.sleep(2)
 
-#     # Augenfarben - Erkennung wird ausgeführt
-#         seconds = 3
-#         print(f"Die Methode {"eye_color_detector.detect_eye_color()"} wird aufgerufen...")
-#         time.sleep(2)
-#         # Schleife für die Ausgabe
-#         for i in range(seconds):
-#             print(f"Berechnung dauert noch {seconds - i} Sekunden...")
-#             time.sleep(1)
-#         print(f"Ergebnis ist: " + eye_color_detector.detect_eye_color("screenshot.jpg"))
+    # Augenfarben - Erkennung wird ausgeführt
+        seconds = 3
+        print(f"Die Methode {"eye_color_detector.detect_eye_color()"} wird aufgerufen...")
+        time.sleep(2)
+        # Schleife für die Ausgabe
+        for i in range(seconds):
+            print(f"Berechnung dauert noch {seconds - i} Sekunden...")
+            time.sleep(1)
+        print(f"Ergebnis ist: " + eye_color_detector.detect_eye_color("screenshot.jpg"))
 
-#     except Exception as e:
-#         print(f"Fehler beim Ausführen: {e}")
+    except Exception as e:
+        print(f"Fehler beim Ausführen: {e}")
