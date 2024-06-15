@@ -34,7 +34,7 @@ video_capture = cv2.VideoCapture(0)
 # Initialize dlib's face detector (HOG-based) and then create the facial landmark predictor
 detector = dlib.get_frontal_face_detector()
 predictor = dlib.shape_predictor(predictor_path)
-
+frame_counter = 0
 
 def convert(frame: np.ndarray) -> bytes:
     _, imencode_image = cv2.imencode('.jpg', frame)
@@ -56,16 +56,24 @@ def detect_and_draw_landmarks(frame):
 # Thanks to FastAPI's `app.get`` it is easy to create a web route which always provides the latest image from OpenCV.
 
     
-async def grab_video_frame() -> Response:
-    screenshot_thread = threading.Thread(getScreenshot())
-    screenshot_thread.start()
+async def grab_video_frame() -> Response: 
+    # screenshot_thread = threading.Thread(getScreenshot())
+    # screenshot_thread.start()
+    global frame_counter
     ret, frame = video_capture.read()
     if not ret:
         return placeholder
-
+    frame_counter += 1
+    
     frame_with_landmarks = detect_and_draw_landmarks(frame)
-    jpeg = convert(frame_with_landmarks)
-    return Response(content=jpeg, media_type='image/jpeg')
+    if frame_counter % 50 == 0:
+        cv2.imwrite("screenshot.jpg", frame)
+        jpeg = convert(frame_with_landmarks)
+        print(frame_counter)
+        return Response(content=jpeg, media_type='image/jpeg')
+    else:
+        jpeg = convert(frame_with_landmarks)
+        return Response(content=jpeg, media_type='image/jpeg')
 
 
 gender_result = "None"
