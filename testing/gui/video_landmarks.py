@@ -405,8 +405,6 @@ class GenderAgeDetector:
             return gender, age
 
 
-
-
 # if __name__ == "__main__":
 #     try:
 #         predictor_path = "../Utils/shape_predictor_68_face_landmarks.dat"
