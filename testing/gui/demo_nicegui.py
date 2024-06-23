@@ -14,16 +14,56 @@ import webcolors
 
 from skript import *
 
+import os
+
 #
 # ________________________________________________________________________________________________________
 #
-#  Aufbau für den shape_predictor und Methoden zum einzeichnen und zum einbinden in der GUI
+#  Einlesen des Shape Predictors und initialize face detector
 #
 # ________________________________________________________________________________________________________
 #
 
-# Pfad zu deinem shape_predictor_68_face_landmarks.dat
-predictor_path = "../Utils/shape_predictor_68_face_landmarks.dat"
+def load_shape_predictor(dat_file_path):
+    # Überprüfen, ob der Pfad korrekt ist und die Datei existiert
+    if not os.path.exists(dat_file_path):
+        print(f"Datei nicht gefunden: {dat_file_path}")
+        return None
+
+    try:
+        # Laden des Prädiktors mit dlib
+        predictor = dlib.shape_predictor(dat_file_path)
+        print("Prädiktor erfolgreich geladen")
+        return predictor
+    except RuntimeError as e:
+        print(f"Fehler beim Laden des Prädiktors: {e}")
+        return None
+
+# Pfad zur shape_predictor_68_face_landmarks.dat im Utils-Ordner
+dat_file_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'Utils', 'shape_predictor_68_face_landmarks.dat'))
+
+# Überprüfen des berechneten Pfads
+print(f"Berechneter Pfad: {dat_file_path}")
+
+# Aufrufen der Funktion mit dem Dateipfad, wenn alles klappt, dann wurde der shape_predictor geladen
+predictor = load_shape_predictor(dat_file_path)
+
+# Jetzt kann der `predictor` weiterverwenden, falls er erfolgreich geladen wurde
+if predictor:
+    print("Bereit zur Verwendung des Prädiktors.")
+else:
+    print("Prädiktor konnte nicht geladen werden.")
+
+# Initialize dlib's face detector (HOG-based) and then create the facial landmark predictor
+detector = dlib.get_frontal_face_detector()
+
+
+# ________________________________________________________________________________________________________
+#
+#  Globale Variblen und Methoden zum einzeichnen und zum einbinden in der GUI
+#
+# ________________________________________________________________________________________________________
+#
 
 # In case you don't have a webcam, this will provide a black placeholder image.
 black_1px = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAAXNSR0IArs4c6QAAAA1JREFUGFdjYGBg+A8AAQQBAHAgZQsAAAAASUVORK5CYII='
@@ -31,9 +71,6 @@ placeholder = Response(content=base64.b64decode(black_1px.encode('ascii')), medi
 # OpenCV is used to access the webcam.
 video_capture = cv2.VideoCapture(0)
 
-# Initialize dlib's face detector (HOG-based) and then create the facial landmark predictor
-detector = dlib.get_frontal_face_detector()
-predictor = dlib.shape_predictor(predictor_path)
 frame_counter = 0
 
 

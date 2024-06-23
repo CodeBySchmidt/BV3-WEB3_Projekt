@@ -1,4 +1,4 @@
-from video_landmarks import FaceLandmarkDetector, EyeColorDetector, GlassesDetector, GenderAgeDetector
+from video_landmarks import EyeColorDetector, GlassesDetector, GenderAgeDetector
 
 
 image_path = "current_frame.jpg"  # Hier den Pfad zu deinem Bild einfügen
