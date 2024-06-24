@@ -405,6 +405,12 @@ class GenderAgeDetector:
             return gender, age
 
 
+class BeardDetector:
+    
+    def init(self, predictor_path):
+        self.detector = dlib.get_frontal_face_detector()
+        self.predictor = dlib.shape_predictor(predictor_path)
+
 # if __name__ == "__main__":
 #     try:
 #         predictor_path = "../Utils/shape_predictor_68_face_landmarks.dat"

@@ -1,14 +1,20 @@
 from video_landmarks import EyeColorDetector, GlassesDetector, GenderAgeDetector
+import os
 
 
 image_path = "current_frame.jpg"  # Hier den Pfad zu deinem Bild einfügen
 
-age_proto = "../Utils/age_deploy.prototxt"
-age_model = "../Utils/age_net.caffemodel"
-gender_proto = "../Utils/gender_deploy.prototxt"
-gender_model = "../Utils/gender_net.caffemodel"
-predictor_path = "../Utils/shape_predictor_68_face_landmarks.dat"
+age_proto = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'Utils', 'age_deploy.prototxt'))
+age_model = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'Utils', 'age_net.caffemodel'))
+gender_proto = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'Utils', 'gender_deploy.prototxt'))
+gender_model = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'Utils', 'gender_net.caffemodel'))
+predictor_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'Utils', 'shape_predictor_68_face_landmarks.dat'))
 
+# age_proto = "C:/Users/Mauri/Desktop/BV3-WEB3_Projekt/testing/Utils/age_deploy.prototxt"
+# age_model = "C:/Users/Mauri/Desktop/BV3-WEB3_Projekt/testing/Utils/age_net.caffemodel"
+# gender_proto = "C:/Users/Mauri/Desktop/BV3-WEB3_Projekt/testing/Utils/gender_deploy.prototxt"
+# gender_model = "C:/Users/Mauri/Desktop/BV3-WEB3_Projekt/testing/Utils/gender_net.caffemodel"
+# predictor_path = "C:/Users/Mauri/Desktop/BV3-WEB3_Projekt/testing/Utils/shape_predictor_68_face_landmarks.dat"
 
 # Wird eventuell gar nicht benötigt
 # def get_screenshot():
@@ -34,7 +40,10 @@ def hair_color() -> str:
 
 
 def facial_hair() -> str:
-    return "Yes"
+    # beard_detector = Beard_detector(predictor_path)
+    # result_beard = beard_detector.display_results(image_path)
+    # return result_beard
+    return "None"
 
 
 def facial_hair_color() -> str:
