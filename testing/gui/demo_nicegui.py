@@ -24,35 +24,10 @@ import os
 # ________________________________________________________________________________________________________
 #
 
-def load_shape_predictor(dat_file_path):
-    # Überprüfen, ob der Pfad korrekt ist und die Datei existiert
-    if not os.path.exists(dat_file_path):
-        print(f"Datei nicht gefunden: {dat_file_path}")
-        return None
-
-    try:
-        # Laden des Prädiktors mit dlib
-        predictor = dlib.shape_predictor(dat_file_path)
-        print("Prädiktor erfolgreich geladen")
-        return predictor
-    except RuntimeError as e:
-        print(f"Fehler beim Laden des Prädiktors: {e}")
-        return None
 
 # Pfad zur shape_predictor_68_face_landmarks.dat im Utils-Ordner
 dat_file_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'Utils', 'shape_predictor_68_face_landmarks.dat'))
-
-# Überprüfen des berechneten Pfads
-print(f"Berechneter Pfad: {dat_file_path}")
-
-# Aufrufen der Funktion mit dem Dateipfad, wenn alles klappt, dann wurde der shape_predictor geladen
-predictor = load_shape_predictor(dat_file_path)
-
-# Jetzt kann der `predictor` weiterverwenden, falls er erfolgreich geladen wurde
-if predictor:
-    print("Bereit zur Verwendung des Prädiktors.")
-else:
-    print("Prädiktor konnte nicht geladen werden.")
+predictor = dlib.shape_predictor(dat_file_path)
 
 # Initialize dlib's face detector (HOG-based) and then create the facial landmark predictor
 detector = dlib.get_frontal_face_detector()
@@ -60,7 +35,7 @@ detector = dlib.get_frontal_face_detector()
 
 # ________________________________________________________________________________________________________
 #
-#  Globale Variblen und Methoden zum einzeichnen und zum einbinden in der GUI
+#  Globale Variablen und Methoden zum einzeichnen und zum einbinden in der GUI
 #
 # ________________________________________________________________________________________________________
 #
@@ -279,7 +254,7 @@ with ui.grid(rows=6, columns=16).classes("gap-5 w-full p-6").style("height: 95vh
             with ui.element("container_output_age").classes("rounded col-span-4 row-start-1 grid grid-cols-2 gap-2 secondary overflow-hidden py-6 drop-shadow-[10px_12px_3px_rgba(0,0,0,0.25)]"):
                 # output_age
                 with ui.element("output_age").classes(
-                        "col-start-1 col-span-1 row-start-1 row-span-1 flex flex-col justify-center items-start pl-10"):
+                        "col-start-1 col-end-2 row-span-1 flex flex-col justify-center items-start pl-10"):
                     age_label = ui.label("None").classes("text-4xl").style("color: white;")
                     ui.label("Age").classes("text-lg").style("color: white;")
 

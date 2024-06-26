@@ -1,3 +1,4 @@
+import os
 import threading
 import time
 import numpy as np
@@ -18,9 +19,7 @@ class GlassesDetector(FaceDetector):
     def __init__(self, predictor_path):
         super().__init__(predictor_path)
 
-    def detect_nose_region(self, image_path):
-        img = dlib.load_rgb_image(image_path)
-        rect = dlib.get_frontal_face_detector()(img)[0]
+    def detect_nose_region(self, img, rect):
         sp = self.predictor(img, rect)
         landmarks = np.array([[p.x, p.y] for p in sp.parts()])
 
@@ -30,37 +29,23 @@ class GlassesDetector(FaceDetector):
             nose_bridge_x.append(landmarks[i][0])
             nose_bridge_y.append(landmarks[i][1])
 
-        # x_min and x_max
         x_min = min(nose_bridge_x)
         x_max = max(nose_bridge_x)
-
-        # ymin (from top eyebrow coordinate),  ymax
         y_min = landmarks[20][1]
         y_max = landmarks[31][1]
 
         img_cropped = img[y_min:y_max, x_min:x_max]
-        # plt.imshow(img)
-        # plt.title("Input Image")
-        # plt.show()
-        # plt.imshow(img_cropped)
-        # plt.title("Cropped Image")
-        # plt.show()
-
         return img_cropped
 
     def detect_glasses(self, img):
-        img_cropped = self.detect_nose_region(img)
+        faces = self.detect_face(img)
+        if faces is None:
+            return "No face detected"
+
+        rect = faces[0]
+        img_cropped = self.detect_nose_region(img, rect)
         img_blur = cv2.GaussianBlur(img_cropped, (9, 9), sigmaX=0, sigmaY=0)
         edges = cv2.Canny(image=img_blur, threshold1=100, threshold2=200)
-
-        # plt.imshow(img_blur)
-        # plt.title("Blur Image")
-        # plt.show()
-        #
-        # plt.imshow(edges, cmap='gray')
-        # plt.title("Edges Image")
-        # plt.show()
-
         edges_center = edges.T[(int(len(edges.T) / 2))]
 
         if 255 in edges_center:
@@ -68,19 +53,34 @@ class GlassesDetector(FaceDetector):
         else:
             return False
 
-    def display_results(self, img):
+    def display_results(self, image_path):
+        if not os.path.isfile(image_path):
+            return "Image does not exist"
+
+        img = dlib.load_rgb_image(image_path)
         glasses = self.detect_glasses(img)
-        if glasses:
+
+        if glasses == "No face detected":
+            return "No face detected"
+        elif glasses == True:
             return "Yes"
         else:
             return "No"
 
+    def detect_face(self, image):
+        gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
+        faces = self.detector(gray)
 
-class EyeColorDetector:
+        if len(faces) > 0:
+            return faces
+        else:
+            return None
+
+
+class EyeColorDetector(FaceDetector):
     def __init__(self, predictor_path):
+        super().__init__(predictor_path)
         self.flag = 0
-        self.detector = dlib.get_frontal_face_detector()
-        self.predictor = dlib.shape_predictor(predictor_path)
 
     def find_color(self, requested_colour):
         min_colours = {}
@@ -93,12 +93,15 @@ class EyeColorDetector:
         closest_name = min_colours[min(min_colours.keys())]
         return closest_name
 
-    def detect_eye_color(self, img_path):
-        img_rgb = cv2.imread(img_path)
-        gray = cv2.cvtColor(img_rgb, cv2.COLOR_RGB2GRAY)
-        dlib_faces = self.detector(gray, 0)
+    def detect_eye_color(self, image_path):
+        if not os.path.isfile(image_path):
+            return "Image does not exist"
 
-        for face in dlib_faces:
+        faces, gray, img_rgb = self.detect_face(image_path)
+        if faces is None:
+            return "No face detected"
+
+        for face in faces:
             eyes = []  # Liste zur Speicherung der Augen
 
             (x, y, w, h) = face_utils.rect_to_bb(face)
@@ -136,6 +139,9 @@ class EyeColorDetector:
                 if self.flag == 1:
                     break
 
+        if roi_eye.size == 0:
+            return "Eye region not found"
+
         x = roi_eye.shape
         row = x[0]
         col = x[1]
@@ -147,25 +153,25 @@ class EyeColorDetector:
         color_name = self.find_color(array1)
         # print(color_name)
 
-        detected_color = np.zeros((100, 300, 3), dtype=np.uint8)
-        detected_color[:] = array1[::1]
-
-        # cv2.putText(detected_color, color_name, (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2,
-        # cv2.LINE_AA)
-
-        roi_top = (row // 2)
-        roi_bottom = (row // 2) + 1
-        roi_left = (col // 3) + 2
-        roi_right = (col // 3) + 9
-        new_rgb = (0, 0, 255)
-        roi_eye[roi_top:roi_bottom, roi_left:roi_right] = new_rgb
-
-        # cv2.imshow("Detected Color", detected_color)
-        # cv2.imshow("frame", roi_eye)
-        # cv2.waitKey(0)
-        # cv2.destroyAllWindows()
-        roi_eye_rgb = cv2.cvtColor(roi_eye, cv2.COLOR_BGR2RGB)
-        detected_color_rgb = cv2.cvtColor(detected_color, cv2.COLOR_BGR2RGB)
+        # detected_color = np.zeros((100, 300, 3), dtype=np.uint8)
+        # detected_color[:] = array1[::1]
+        #
+        # # cv2.putText(detected_color, color_name, (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2,
+        # # cv2.LINE_AA)
+        #
+        # roi_top = (row // 2)
+        # roi_bottom = (row // 2) + 1
+        # roi_left = (col // 3) + 2
+        # roi_right = (col // 3) + 9
+        # new_rgb = (0, 0, 255)
+        # roi_eye[roi_top:roi_bottom, roi_left:roi_right] = new_rgb
+        #
+        # # cv2.imshow("Detected Color", detected_color)
+        # # cv2.imshow("frame", roi_eye)
+        # # cv2.waitKey(0)
+        # # cv2.destroyAllWindows()
+        # roi_eye_rgb = cv2.cvtColor(roi_eye, cv2.COLOR_BGR2RGB)
+        # detected_color_rgb = cv2.cvtColor(detected_color, cv2.COLOR_BGR2RGB)
         # plt.imshow(detected_color_rgb)
         # plt.title("Detected Color")
         # plt.show()
@@ -173,6 +179,101 @@ class EyeColorDetector:
         # plt.title("Eye Detected")
         # plt.show()
         return color_name
+
+    def detect_face(self, image):
+        image = cv2.imread(image)
+        if image is None:
+            return None, None, None
+
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        faces = self.detector(gray)
+
+        if len(faces) > 0:
+            return faces, gray, image
+        else:
+            return None, gray, image
+
+
+class GenderAgeDetector:
+    def __init__(self, age_model, age_proto, gender_model, gender_proto, predictor_path):
+        self.ageNet = cv2.dnn.readNet(age_model, age_proto)
+        self.genderNet = cv2.dnn.readNet(gender_model, gender_proto)
+        self.detector = dlib.get_frontal_face_detector()
+        self.predictor = dlib.shape_predictor(predictor_path)
+        self.MODEL_MEAN_VALUES = (78.4263377603, 87.7689143744, 114.895847746)
+        self.ageList = ['(0-2)', '(4-6)', '(8-12)', '(15-20)', '(25-32)', '(38-43)', '(48-53)', '(60-100)']
+        self.genderList = ['Male', 'Female']
+        self.padding = 20
+
+    def highlight_face(self, frame):
+        frame_opencv_dnn = frame.copy()
+        gray = cv2.cvtColor(frame_opencv_dnn, cv2.COLOR_BGR2GRAY)
+
+        faces = self.detector(gray)
+        face_boxes = []
+
+        for face in faces:
+            x1 = face.left()
+            y1 = face.top()
+            x2 = face.right()
+            y2 = face.bottom()
+            face_boxes.append([x1, y1, x2, y2])
+
+            shape = self.predictor(gray, face)
+
+            for i in range(0, 68):
+                x = shape.part(i).x
+                y = shape.part(i).y
+                cv2.circle(frame_opencv_dnn, (x, y), 2, (0, 255, 0), -1)
+
+        return frame_opencv_dnn, face_boxes
+
+    def detect_age_gender(self, frame, face_box):
+        face = frame[max(0, face_box[1] - self.padding):
+                     min(face_box[3] + self.padding, frame.shape[0] - 1), max(0, face_box[0] - self.padding)
+                                                                          :min(face_box[2] + self.padding,
+                                                                               frame.shape[1] - 1)]
+
+        blob = cv2.dnn.blobFromImage(face, 1.0, (227, 227), self.MODEL_MEAN_VALUES, swapRB=False)
+        self.genderNet.setInput(blob)
+        gender_preds = self.genderNet.forward()
+        gender = self.genderList[gender_preds[0].argmax()]
+
+        self.ageNet.setInput(blob)
+        age_preds = self.ageNet.forward()
+        age = self.ageList[age_preds[0].argmax()]
+
+        return gender, age
+
+    def process_image(self, image_path):
+        if not os.path.isfile(image_path):
+            return "Image does not exist", "Image does not exist"
+
+        frame = cv2.imread(image_path)
+        if frame is None:
+            print(f"Error: Unable to open image file {image_path}")
+            return
+
+        result_img, face_boxes = self.highlight_face(frame)
+        if not face_boxes:
+            return "No face detected", "No face detected"
+
+        for faceBox in face_boxes:
+            gender, age = self.detect_age_gender(frame, faceBox)
+            # print(f'Gender: {gender}')
+            # print(f'Age: {age[1:-1]} years')
+
+            # cv2.putText(result_img, f'{gender}, {age}', (faceBox[0], faceBox[1] - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.8,
+            #             (0, 255, 255), 2, cv2.LINE_AA)
+
+            return gender, age
+
+
+class BeardDetector:
+    
+    def init(self, predictor_path):
+        self.detector = dlib.get_frontal_face_detector()
+        self.predictor = dlib.shape_predictor(predictor_path)
 
 
 class FaceLandmarkDetector:
@@ -258,6 +359,7 @@ class FaceLandmarkDetector:
             time.sleep(0.1)
 
 
+
 # class AgeGenderDetector:
 #
 #     def __init__(self, predictor_path):
@@ -333,83 +435,7 @@ class FaceLandmarkDetector:
 #         return
 
 
-class GenderAgeDetector:
-    def __init__(self, age_model, age_proto, gender_model, gender_proto, predictor_path):
-        self.ageNet = cv2.dnn.readNet(age_model, age_proto)
-        self.genderNet = cv2.dnn.readNet(gender_model, gender_proto)
-        self.detector = dlib.get_frontal_face_detector()
-        self.predictor = dlib.shape_predictor(predictor_path)
-        self.MODEL_MEAN_VALUES = (78.4263377603, 87.7689143744, 114.895847746)
-        self.ageList = ['(0-2)', '(4-6)', '(8-12)', '(15-20)', '(25-32)', '(38-43)', '(48-53)', '(60-100)']
-        self.genderList = ['Male', 'Female']
-        self.padding = 20
 
-    def highlight_face(self, frame):
-        frame_opencv_dnn = frame.copy()
-        gray = cv2.cvtColor(frame_opencv_dnn, cv2.COLOR_BGR2GRAY)
-
-        faces = self.detector(gray)
-        face_boxes = []
-
-        for face in faces:
-            x1 = face.left()
-            y1 = face.top()
-            x2 = face.right()
-            y2 = face.bottom()
-            face_boxes.append([x1, y1, x2, y2])
-
-            shape = self.predictor(gray, face)
-
-            for i in range(0, 68):
-                x = shape.part(i).x
-                y = shape.part(i).y
-                cv2.circle(frame_opencv_dnn, (x, y), 2, (0, 255, 0), -1)
-
-        return frame_opencv_dnn, face_boxes
-
-    def detect_age_gender(self, frame, face_box):
-        face = frame[max(0, face_box[1] - self.padding):
-                     min(face_box[3] + self.padding, frame.shape[0] - 1), max(0, face_box[0] - self.padding)
-                                                                          :min(face_box[2] + self.padding,
-                                                                               frame.shape[1] - 1)]
-
-        blob = cv2.dnn.blobFromImage(face, 1.0, (227, 227), self.MODEL_MEAN_VALUES, swapRB=False)
-        self.genderNet.setInput(blob)
-        gender_preds = self.genderNet.forward()
-        gender = self.genderList[gender_preds[0].argmax()]
-
-        self.ageNet.setInput(blob)
-        age_preds = self.ageNet.forward()
-        age = self.ageList[age_preds[0].argmax()]
-
-        return gender, age
-
-    def process_image(self, image_path):
-        frame = cv2.imread(image_path)
-        if frame is None:
-            print(f"Error: Unable to open image file {image_path}")
-            return
-
-        result_img, face_boxes = self.highlight_face(frame)
-        if not face_boxes:
-            print("No face detected")
-
-        for faceBox in face_boxes:
-            gender, age = self.detect_age_gender(frame, faceBox)
-            # print(f'Gender: {gender}')
-            # print(f'Age: {age[1:-1]} years')
-
-            # cv2.putText(result_img, f'{gender}, {age}', (faceBox[0], faceBox[1] - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.8,
-            #             (0, 255, 255), 2, cv2.LINE_AA)
-
-            return gender, age
-
-
-class BeardDetector:
-    
-    def init(self, predictor_path):
-        self.detector = dlib.get_frontal_face_detector()
-        self.predictor = dlib.shape_predictor(predictor_path)
 
 # if __name__ == "__main__":
 #     try:

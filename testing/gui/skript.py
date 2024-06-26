@@ -10,12 +10,6 @@ gender_proto = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'Ut
 gender_model = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'Utils', 'gender_net.caffemodel'))
 predictor_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'Utils', 'shape_predictor_68_face_landmarks.dat'))
 
-# age_proto = "C:/Users/Mauri/Desktop/BV3-WEB3_Projekt/testing/Utils/age_deploy.prototxt"
-# age_model = "C:/Users/Mauri/Desktop/BV3-WEB3_Projekt/testing/Utils/age_net.caffemodel"
-# gender_proto = "C:/Users/Mauri/Desktop/BV3-WEB3_Projekt/testing/Utils/gender_deploy.prototxt"
-# gender_model = "C:/Users/Mauri/Desktop/BV3-WEB3_Projekt/testing/Utils/gender_net.caffemodel"
-# predictor_path = "C:/Users/Mauri/Desktop/BV3-WEB3_Projekt/testing/Utils/shape_predictor_68_face_landmarks.dat"
-
 # Wird eventuell gar nicht benötigt
 # def get_screenshot():
 #     detector = FaceLandmarkDetector(predictor_path)
