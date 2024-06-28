@@ -10,13 +10,13 @@ import matplotlib.pyplot as plt
 
 
 class FaceDetector:
-    def __init__(self, predictor_path):
+    def __init__(self, predictor_path: str):
         self.detector = dlib.get_frontal_face_detector()
         self.predictor = dlib.shape_predictor(predictor_path)
 
 
 class GlassesDetector(FaceDetector):
-    def __init__(self, predictor_path):
+    def __init__(self, predictor_path: str):
         super().__init__(predictor_path)
 
     def detect_nose_region(self, img, rect):
@@ -78,7 +78,7 @@ class GlassesDetector(FaceDetector):
 
 
 class EyeColorDetector(FaceDetector):
-    def __init__(self, predictor_path):
+    def __init__(self, predictor_path: str):
         super().__init__(predictor_path)
         self.flag = 0
 
@@ -194,12 +194,12 @@ class EyeColorDetector(FaceDetector):
             return None, gray, image
 
 
-class GenderAgeDetector:
-    def __init__(self, age_model, age_proto, gender_model, gender_proto, predictor_path):
+class GenderAgeDetector(FaceDetector):
+    def __init__(self, age_model, age_proto, gender_model, gender_proto, predictor_path: str):
+        super().__init__(predictor_path)
         self.ageNet = cv2.dnn.readNet(age_model, age_proto)
         self.genderNet = cv2.dnn.readNet(gender_model, gender_proto)
         self.detector = dlib.get_frontal_face_detector()
-        self.predictor = dlib.shape_predictor(predictor_path)
         self.MODEL_MEAN_VALUES = (78.4263377603, 87.7689143744, 114.895847746)
         self.ageList = ['(0-2)', '(4-6)', '(8-12)', '(15-20)', '(25-32)', '(38-43)', '(48-53)', '(60-100)']
         self.genderList = ['Male', 'Female']
