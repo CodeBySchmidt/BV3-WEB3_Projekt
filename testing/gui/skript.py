@@ -41,7 +41,7 @@ def facial_hair() -> str:
 
 
 def facial_hair_color() -> str:
-    return "Fuchsia"
+    return "Sienna"
 
 
 def gender_age() -> str:

@@ -1,10 +1,7 @@
 import cv2
 
-# IP-Adresse und Port der IP-Kamera
-ip = 'http://169.254.100.2/video'
-
-# Video-Stream von der IP-Kamera öffnen
-cap = cv2.VideoCapture(ip)
+# Video-Stream von der Kamera öffnen
+cap = cv2.VideoCapture(0)
 
 # Überprüfen, ob der Stream geöffnet werden konnte
 if not cap.isOpened():
@@ -22,7 +19,7 @@ while True:
         break
 
     # Frame anzeigen
-    cv2.imshow('IP-Kamera Stream', frame)
+    cv2.imshow('Kamera Stream', frame)
 
     # Abbruchbedingung (wenn 'q' gedrückt wird)
     if cv2.waitKey(1) & 0xFF == ord('q'):

@@ -79,12 +79,14 @@ async def grab_video_frame() -> Response:
 
     if frame_counter % 50 == 0:
         cv2.imwrite("current_frame.jpg", detect_and_draw_landmarks(frame, False))
-        jpeg = convert(detect_and_draw_landmarks(frame))
+        # jpeg = convert(detect_and_draw_landmarks(frame))
+        jpeg = convert(frame)
         print(frame_counter)
         frame_counter = 0
         return Response(content=jpeg, media_type='image/jpeg')
     else:
-        jpeg = convert(detect_and_draw_landmarks(frame))
+        # jpeg = convert(detect_and_draw_landmarks(frame))
+        jpeg = convert(frame)
         return Response(content=jpeg, media_type='image/jpeg')
 
 
@@ -199,7 +201,7 @@ ui.query("body").classes("primary")
 with ui.grid(rows=6, columns=16).classes("gap-5 w-full p-6").style("height: 95vh;"):
 
     with ui.element("container_logo").classes("row-start-1 row-span-1 col-span-5 h-auto rounded secondary flex justify-center items-center overflow-hidden"):
-        ui.label("Logo").classes("text-white flex justify-center items-center text-4xl")
+        ui.label("Logo").classes("text-white flex justify-center items-center text-3xl")
 
     with ui.element("container_outputs").classes("row-start-2 row-span-4 col-span-5 rounded"):
         with ui.grid(rows=4, columns=2).classes("h-full w-full gap-5"):
@@ -207,7 +209,7 @@ with ui.grid(rows=6, columns=16).classes("gap-5 w-full p-6").style("height: 95vh
             with ui.element("container_output_1").classes("rounded col-span-2 row-start-1 grid grid-cols-2 gap-2 secondary overflow-hidden drop-shadow-[10px_12px_3px_rgba(0,0,0,0.25)]"):
                 # output_1 links
                 with ui.element("output_1").classes("col-start-1 col-span-1 row-start-1 row-span-1 flex flex-col justify-center items-start pl-10"):
-                    eye_color_label = ui.label("None").classes("text-4xl").style("color: white;")
+                    eye_color_label = ui.label("None").classes("text-3xl").style("color: white;")
                     ui.label("Eye Color").classes("text-lg").style("color: white;")
 
                 # output_1_color rechts
@@ -218,7 +220,7 @@ with ui.grid(rows=6, columns=16).classes("gap-5 w-full p-6").style("height: 95vh
             with ui.element("container_output_2").classes("rounded col-span-2 row-start-2 grid grid-cols-2 gap-2 secondary overflow-hidden drop-shadow-[10px_12px_3px_rgba(0,0,0,0.25)]"):
                 # output_2 links
                 with ui.element("output_2").classes("col-start-1 col-span-1 row-start-1 row-span-1 flex flex-col justify-center items-start pl-10"):
-                    facial_hair_color_label = ui.label("None").classes("text-4xl").style("color: white;")
+                    facial_hair_color_label = ui.label("None").classes("text-3xl").style("color: white;")
                     ui.label("Facial Hair Color").classes("text-lg").style("color: white;")
 
                 # output_2_color rechts
@@ -229,7 +231,7 @@ with ui.grid(rows=6, columns=16).classes("gap-5 w-full p-6").style("height: 95vh
             with ui.element("container_output_3").classes("rounded col-span-2 row-start-3 grid grid-cols-2 gap-2 secondary overflow-hidden drop-shadow-[10px_12px_3px_rgba(0,0,0,0.25)]"):
                 # output_3 links
                 with ui.element("output_3").classes("col-start-1 col-span-1 row-start-1 row-span-1 flex flex-col justify-center items-start pl-10"):
-                    hair_color_label = ui.label("None").classes("text-4xl").style("color: white;")
+                    hair_color_label = ui.label("None").classes("text-3xl").style("color: white;")
                     ui.label("Hair Color").classes("text-lg").style("color: white;")
                 # output_3_color rechts
                 with ui.element("output_3_color").classes("col-start-2 col-span-1 row-start-1 row-span-1 flex justify-center items-center"):
@@ -237,12 +239,12 @@ with ui.grid(rows=6, columns=16).classes("gap-5 w-full p-6").style("height: 95vh
 
             # Vierte Zeile # output_4 links
             with ui.element("output_4").classes("col-start-1 col-span-1 row-start-4 row-span-1 rounded secondary overflow-hidden flex flex-col justify-center items-start pl-10 drop-shadow-[10px_12px_3px_rgba(0,0,0,0.25)]"):
-                facial_hair_label = ui.label("None").classes("text-4xl").style("color: white;")
+                facial_hair_label = ui.label("None").classes("text-3xl").style("color: white;")
                 ui.label("Facial Hair").classes("text-lg").style("color: white;")
 
             # Vierte Zeile # output_5 rechts
             with ui.element("output_5").classes("col-start-2 col-span-1 row-start-4 row-span-1 rounded secondary overflow-hidden flex flex-col justify-center items-start pl-10 drop-shadow-[10px_12px_3px_rgba(0,0,0,0.25)]"):
-                glasses_label = ui.label("None").classes("text-4xl").style("color: white;")
+                glasses_label = ui.label("None").classes("text-3xl").style("color: white;")
                 ui.label("Glasses").classes("text-lg").style("color: white;")
 
     with ui.element("container_camera").classes("col-span-11 row-start-1 row-span-5 h-auto rounded p-1 secondary overflow-hidden drop-shadow-[10px_12px_3px_rgba(0,0,0,0.25)]"):
@@ -255,21 +257,21 @@ with ui.grid(rows=6, columns=16).classes("gap-5 w-full p-6").style("height: 95vh
                 # output_age
                 with ui.element("output_age").classes(
                         "col-start-1 col-end-2 row-span-1 flex flex-col justify-center items-start pl-10"):
-                    age_label = ui.label("None").classes("text-4xl").style("color: white;")
+                    age_label = ui.label("None").classes("text-3xl").style("color: white;")
                     ui.label("Age").classes("text-lg").style("color: white;")
 
             # Zweite Spalte -> Race
             with ui.element("container_output_race").classes("rounded col-span-4 row-start-1 grid grid-cols-2 gap-2 secondary overflow-hidden py-6 drop-shadow-[10px_12px_3px_rgba(0,0,0,0.25)]"):
                 # output_race
                 with ui.element("output_race").classes("col-start-1 col-span-1 row-start-1 row-span-1 flex flex-col justify-center items-start pl-10"):
-                    race_label = ui.label("None").classes("text-4xl").style("color: white;")
+                    race_label = ui.label("None").classes("text-3xl").style("color: white;")
                     ui.label("Race").classes("text-lg").style("color: white;")
 
             # Dritte Spalte -> Gender
             with ui.element("container_output_gender").classes("rounded col-span-4 row-start-1 grid grid-cols-2 gap-2 secondary overflow-hidden py-6 drop-shadow-[10px_12px_3px_rgba(0,0,0,0.25)]"):
                 # output_gender
                 with ui.element("output_gender").classes("col-start-1 col-span-1 row-start-1 row-span-1 flex flex-col justify-center items-start pl-10"):
-                    gender_label = ui.label("None").classes("text-4xl").style("color: white;")
+                    gender_label = ui.label("None").classes("text-3xl").style("color: white;")
                     ui.label("Gender").classes("text-lg").style("color: white;")
 
     with ui.element("container_button").classes("col-span-4 row-start-6 flex justify-end items-center overflow-hidden"):
@@ -278,7 +280,7 @@ with ui.grid(rows=6, columns=16).classes("gap-5 w-full p-6").style("height: 95vh
 # A timer constantly updates the source of the image.
 # Because data from same paths are cached by the browser,
 # we must force an update by adding the current timestamp to the source.
-ui.timer(interval=0.1, callback=lambda: video_image.set_source(f'/video/frame?{time.time()}'))
+ui.timer(interval=0.03, callback=lambda: video_image.set_source(f'/video/frame?{time.time()}'))
 
 
 async def disconnect() -> None:
@@ -288,10 +290,17 @@ async def disconnect() -> None:
 
 
 def handle_sigint(signum, frame) -> None:
+    # `disconnect` is async, so it must be called from the event loop; we use `ui.timer` to do so.
+    ui.timer(0.1, disconnect, once=True)
+    # Delay the default handler to allow the disconnect to complete.
     ui.timer(1, lambda: signal.default_int_handler(signum, frame), once=True)
 
 
 async def cleanup() -> None:
+    # This prevents ugly stack traces when auto-reloading on code change,
+    # because otherwise disconnected clients try to reconnect to the newly started server.
+    await disconnect()
+    # Release the webcam hardware so it can be used by other applications again.
     video_capture.release()
 
 
