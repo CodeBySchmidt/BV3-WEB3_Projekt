@@ -308,7 +308,7 @@ with ui.grid(rows=6, columns=16).classes("gap-5 w-full p-6").style("height: 95vh
                     ui.label("Gender").classes("text-lg").style("color: white;")
 
     with ui.element("container_button").classes("col-span-4 row-start-6 flex justify-end items-center overflow-hidden"):
-        ui.button("Button", on_click=button_clicked).classes("btn btn-blue")
+        ui.button("Berechne...", on_click=button_clicked).classes("btn btn-blue")
 
 # A timer constantly updates the source of the image.
 # Because data from same paths are cached by the browser,
