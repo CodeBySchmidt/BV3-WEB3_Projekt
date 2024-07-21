@@ -16,6 +16,10 @@ from skript import *
 
 import os
 
+from threading import Thread
+from VideoGet import VideoGet
+from VideoShow import VideoShow
+
 #
 # ________________________________________________________________________________________________________
 #
@@ -26,12 +30,12 @@ import os
 
 
 # Pfad zur shape_predictor_68_face_landmarks.dat im Utils-Ordner
-dat_file_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'Utils', 'shape_predictor_68_face_landmarks.dat'))
+dat_file_path = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), '..', 'Utils', 'shape_predictor_68_face_landmarks.dat'))
 predictor = dlib.shape_predictor(dat_file_path)
 
 # Initialize dlib's face detector (HOG-based) and then create the facial landmark predictor
 detector = dlib.get_frontal_face_detector()
-
 
 # ________________________________________________________________________________________________________
 #
@@ -48,6 +52,63 @@ video_capture = cv2.VideoCapture(0)
 
 frame_counter = 0
 
+# Global variable to store the latest frame
+# latest_frame = None
+
+#
+# def thread_both(source=0):
+#     """
+#     Dedicated thread for grabbing video frames with VideoGet object.
+#     Dedicated thread for showing video frames with VideoShow object.
+#     Main thread serves only to pass frames between VideoGet and
+#     VideoShow objects/threads.
+#     """
+#     global latest_frame
+#
+#     video_getter = VideoGet(source).start()
+#     video_shower = VideoShow(video_getter.frame).start()
+#
+#     while True:
+#         if video_getter.stopped or video_shower.stopped:
+#             video_shower.stop()
+#             video_getter.stop()
+#             break
+#
+#         frame = video_getter.frame
+#
+#         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+#         rects = detector(gray, 0)
+#
+#         for rect in rects:
+#             shape = predictor(gray, rect)
+#             shape = face_utils.shape_to_np(shape)
+#
+#             for (x, y) in shape:
+#                 cv2.circle(frame, (x, y), 1, (0, 255, 0), 1)
+#
+#         latest_frame = frame
+#         video_shower.frame = frame
+#
+#
+# def start_video_threads():
+#     video_thread = Thread(target=thread_both, args=(0,))
+#     video_thread.start()
+#
+#
+# @app.get('/video/frame')
+# async def grab_video_frame() -> Response:
+#
+#     thread_both()
+#
+#     global latest_frame
+#
+#     if latest_frame is None:
+#         return placeholder
+#
+#     jpeg = convert(latest_frame)
+#
+#     return Response(content=jpeg, media_type='image/jpg')
+
 
 def convert(frame: np.ndarray) -> bytes:
     _, imencode_image = cv2.imencode('.jpg', frame)
@@ -63,7 +124,7 @@ def detect_and_draw_landmarks(frame, draw_landmarks=True):
 
         if draw_landmarks:
             for (x, y) in shape:
-                cv2.circle(frame, (x, y), 1, (0, 255, 0), -1)
+                cv2.circle(frame, (x, y), 3, (0, 255, 0), -1)
 
     return frame
 
@@ -78,21 +139,20 @@ async def grab_video_frame() -> Response:
     frame_counter += 1
 
     if frame_counter % 50 == 0:
-        cv2.imwrite("current_frame.jpg", detect_and_draw_landmarks(frame, False))
-        # jpeg = convert(detect_and_draw_landmarks(frame))
-        jpeg = convert(frame)
+        cv2.imwrite("current_frame.jpg", frame)
+        jpeg = convert(detect_and_draw_landmarks(frame))
+        # jpeg = convert(frame)
         print(frame_counter)
         frame_counter = 0
         return Response(content=jpeg, media_type='image/jpeg')
     else:
-        # jpeg = convert(detect_and_draw_landmarks(frame))
-        jpeg = convert(frame)
+        jpeg = convert(detect_and_draw_landmarks(frame))
+        # jpeg = convert(frame)
         return Response(content=jpeg, media_type='image/jpeg')
 
 
 # Callback-Funktion für Button-Klick
 def button_clicked():
-
     facial_hair_result = facial_hair()
     facial_hair_color_result = facial_hair_color()
     glasses_result = glasses()
@@ -100,7 +160,6 @@ def button_clicked():
     eye_color_result = eye_color()
     race_result = race()
     gender_age_result = gender_age()
-
 
     # Label aktualisieren, um den neuen Wert anzuzeigen
     facial_hair_label.set_text(facial_hair_result)
@@ -199,61 +258,80 @@ ui.query("body").classes("primary")
 
 # Erstelle das Grid mit den farbigen Labels
 with ui.grid(rows=6, columns=16).classes("gap-5 w-full p-6").style("height: 95vh;"):
-
-    with ui.element("container_logo").classes("row-start-1 row-span-1 col-span-5 h-auto rounded secondary flex justify-center items-center overflow-hidden"):
+    with ui.element("container_logo").classes(
+            "row-start-1 row-span-1 col-span-5 h-auto rounded secondary flex justify-center items-center overflow-hidden"):
         ui.label("Logo").classes("text-white flex justify-center items-center text-3xl")
 
     with ui.element("container_outputs").classes("row-start-2 row-span-4 col-span-5 rounded"):
         with ui.grid(rows=4, columns=2).classes("h-full w-full gap-5"):
             # Erste Zeile
-            with ui.element("container_output_1").classes("rounded col-span-2 row-start-1 grid grid-cols-2 gap-2 secondary overflow-hidden drop-shadow-[10px_12px_3px_rgba(0,0,0,0.25)]"):
+            with ui.element("container_output_1").classes(
+                    "rounded col-span-2 row-start-1 grid grid-cols-2 gap-2 secondary overflow-hidden drop-shadow-[10px_12px_3px_rgba(0,0,0,0.25)]"):
                 # output_1 links
-                with ui.element("output_1").classes("col-start-1 col-span-1 row-start-1 row-span-1 flex flex-col justify-center items-start pl-10"):
+                with ui.element("output_1").classes(
+                        "col-start-1 col-span-1 row-start-1 row-span-1 flex flex-col justify-center items-start pl-10"):
                     eye_color_label = ui.label("None").classes("text-3xl").style("color: white;")
                     ui.label("Eye Color").classes("text-lg").style("color: white;")
 
                 # output_1_color rechts
-                with ui.element("output_1_color").classes("col-start-2 col-span-1 row-start-1 row-span-1 flex justify-center items-center"):
-                    output_1_color = ui.label("None").classes("text-black bg-white p-5 rounded flex justify-center items-center inset-shadow").style("height: 80%; width: 80%;")
+                with ui.element("output_1_color").classes(
+                        "col-start-2 col-span-1 row-start-1 row-span-1 flex justify-center items-center"):
+                    output_1_color = ui.label("None").classes(
+                        "text-black bg-white p-5 rounded flex justify-center items-center inset-shadow").style(
+                        "height: 80%; width: 80%;")
 
             # Zweite Zeile
-            with ui.element("container_output_2").classes("rounded col-span-2 row-start-2 grid grid-cols-2 gap-2 secondary overflow-hidden drop-shadow-[10px_12px_3px_rgba(0,0,0,0.25)]"):
+            with ui.element("container_output_2").classes(
+                    "rounded col-span-2 row-start-2 grid grid-cols-2 gap-2 secondary overflow-hidden drop-shadow-[10px_12px_3px_rgba(0,0,0,0.25)]"):
                 # output_2 links
-                with ui.element("output_2").classes("col-start-1 col-span-1 row-start-1 row-span-1 flex flex-col justify-center items-start pl-10"):
+                with ui.element("output_2").classes(
+                        "col-start-1 col-span-1 row-start-1 row-span-1 flex flex-col justify-center items-start pl-10"):
                     facial_hair_color_label = ui.label("None").classes("text-3xl").style("color: white;")
                     ui.label("Facial Hair Color").classes("text-lg").style("color: white;")
 
                 # output_2_color rechts
-                with ui.element("output_2_color").classes("col-start-2 col-span-1 row-start-1 row-span-1 flex justify-center items-center"):
-                    output_2_color = ui.label("None").classes("text-black bg-white p-5 rounded flex justify-center items-center inset-shadow").style("height: 80%; width: 80%")
+                with ui.element("output_2_color").classes(
+                        "col-start-2 col-span-1 row-start-1 row-span-1 flex justify-center items-center"):
+                    output_2_color = ui.label("None").classes(
+                        "text-black bg-white p-5 rounded flex justify-center items-center inset-shadow").style(
+                        "height: 80%; width: 80%")
 
             # Dritte Zeile
-            with ui.element("container_output_3").classes("rounded col-span-2 row-start-3 grid grid-cols-2 gap-2 secondary overflow-hidden drop-shadow-[10px_12px_3px_rgba(0,0,0,0.25)]"):
+            with ui.element("container_output_3").classes(
+                    "rounded col-span-2 row-start-3 grid grid-cols-2 gap-2 secondary overflow-hidden drop-shadow-[10px_12px_3px_rgba(0,0,0,0.25)]"):
                 # output_3 links
-                with ui.element("output_3").classes("col-start-1 col-span-1 row-start-1 row-span-1 flex flex-col justify-center items-start pl-10"):
+                with ui.element("output_3").classes(
+                        "col-start-1 col-span-1 row-start-1 row-span-1 flex flex-col justify-center items-start pl-10"):
                     hair_color_label = ui.label("None").classes("text-3xl").style("color: white;")
                     ui.label("Hair Color").classes("text-lg").style("color: white;")
                 # output_3_color rechts
-                with ui.element("output_3_color").classes("col-start-2 col-span-1 row-start-1 row-span-1 flex justify-center items-center"):
-                    output_3_color = ui.label("None").classes("bg-white text-black p-5 rounded flex justify-center items-center inset-shadow").style("height: 80%; width: 80%")
+                with ui.element("output_3_color").classes(
+                        "col-start-2 col-span-1 row-start-1 row-span-1 flex justify-center items-center"):
+                    output_3_color = ui.label("None").classes(
+                        "bg-white text-black p-5 rounded flex justify-center items-center inset-shadow").style(
+                        "height: 80%; width: 80%")
 
             # Vierte Zeile # output_4 links
-            with ui.element("output_4").classes("col-start-1 col-span-1 row-start-4 row-span-1 rounded secondary overflow-hidden flex flex-col justify-center items-start pl-10 drop-shadow-[10px_12px_3px_rgba(0,0,0,0.25)]"):
+            with ui.element("output_4").classes(
+                    "col-start-1 col-span-1 row-start-4 row-span-1 rounded secondary overflow-hidden flex flex-col justify-center items-start pl-10 drop-shadow-[10px_12px_3px_rgba(0,0,0,0.25)]"):
                 facial_hair_label = ui.label("None").classes("text-3xl").style("color: white;")
                 ui.label("Facial Hair").classes("text-lg").style("color: white;")
 
             # Vierte Zeile # output_5 rechts
-            with ui.element("output_5").classes("col-start-2 col-span-1 row-start-4 row-span-1 rounded secondary overflow-hidden flex flex-col justify-center items-start pl-10 drop-shadow-[10px_12px_3px_rgba(0,0,0,0.25)]"):
+            with ui.element("output_5").classes(
+                    "col-start-2 col-span-1 row-start-4 row-span-1 rounded secondary overflow-hidden flex flex-col justify-center items-start pl-10 drop-shadow-[10px_12px_3px_rgba(0,0,0,0.25)]"):
                 glasses_label = ui.label("None").classes("text-3xl").style("color: white;")
                 ui.label("Glasses").classes("text-lg").style("color: white;")
 
-    with ui.element("container_camera").classes("col-span-11 row-start-1 row-span-5 h-auto rounded p-1 secondary overflow-hidden drop-shadow-[10px_12px_3px_rgba(0,0,0,0.25)]"):
+    with ui.element("container_camera").classes(
+            "col-span-11 row-start-1 row-span-5 h-auto rounded p-1 secondary overflow-hidden drop-shadow-[10px_12px_3px_rgba(0,0,0,0.25)]"):
         video_image = ui.interactive_image().classes("h-full w-full object-contain")
 
     with ui.element("container_ki").classes("col-span-12 row-start-6 rounded pr-6 overflow-hidden"):
         with ui.grid(rows=1, columns=3).classes("h-fit w-full gap-5"):
             # Erste Spalte -> Age
-            with ui.element("container_output_age").classes("rounded col-span-4 row-start-1 grid grid-cols-2 gap-2 secondary overflow-hidden py-6 drop-shadow-[10px_12px_3px_rgba(0,0,0,0.25)]"):
+            with ui.element("container_output_age").classes(
+                    "rounded col-span-4 row-start-1 grid grid-cols-2 gap-2 secondary overflow-hidden py-6 drop-shadow-[10px_12px_3px_rgba(0,0,0,0.25)]"):
                 # output_age
                 with ui.element("output_age").classes(
                         "col-start-1 col-end-2 row-span-1 flex flex-col justify-center items-start pl-10"):
@@ -261,16 +339,20 @@ with ui.grid(rows=6, columns=16).classes("gap-5 w-full p-6").style("height: 95vh
                     ui.label("Age").classes("text-lg").style("color: white;")
 
             # Zweite Spalte -> Race
-            with ui.element("container_output_race").classes("rounded col-span-4 row-start-1 grid grid-cols-2 gap-2 secondary overflow-hidden py-6 drop-shadow-[10px_12px_3px_rgba(0,0,0,0.25)]"):
+            with ui.element("container_output_race").classes(
+                    "rounded col-span-4 row-start-1 grid grid-cols-2 gap-2 secondary overflow-hidden py-6 drop-shadow-[10px_12px_3px_rgba(0,0,0,0.25)]"):
                 # output_race
-                with ui.element("output_race").classes("col-start-1 col-span-1 row-start-1 row-span-1 flex flex-col justify-center items-start pl-10"):
+                with ui.element("output_race").classes(
+                        "col-start-1 col-span-1 row-start-1 row-span-1 flex flex-col justify-center items-start pl-10"):
                     race_label = ui.label("None").classes("text-3xl").style("color: white;")
                     ui.label("Race").classes("text-lg").style("color: white;")
 
             # Dritte Spalte -> Gender
-            with ui.element("container_output_gender").classes("rounded col-span-4 row-start-1 grid grid-cols-2 gap-2 secondary overflow-hidden py-6 drop-shadow-[10px_12px_3px_rgba(0,0,0,0.25)]"):
+            with ui.element("container_output_gender").classes(
+                    "rounded col-span-4 row-start-1 grid grid-cols-2 gap-2 secondary overflow-hidden py-6 drop-shadow-[10px_12px_3px_rgba(0,0,0,0.25)]"):
                 # output_gender
-                with ui.element("output_gender").classes("col-start-1 col-span-1 row-start-1 row-span-1 flex flex-col justify-center items-start pl-10"):
+                with ui.element("output_gender").classes(
+                        "col-start-1 col-span-1 row-start-1 row-span-1 flex flex-col justify-center items-start pl-10"):
                     gender_label = ui.label("None").classes("text-3xl").style("color: white;")
                     ui.label("Gender").classes("text-lg").style("color: white;")
 
@@ -280,7 +362,7 @@ with ui.grid(rows=6, columns=16).classes("gap-5 w-full p-6").style("height: 95vh
 # A timer constantly updates the source of the image.
 # Because data from same paths are cached by the browser,
 # we must force an update by adding the current timestamp to the source.
-ui.timer(interval=0.03, callback=lambda: video_image.set_source(f'/video/frame?{time.time()}'))
+ui.timer(interval=0.04, callback=lambda: video_image.set_source(f'/video/frame?{time.time()}'))
 
 
 async def disconnect() -> None:

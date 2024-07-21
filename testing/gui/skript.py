@@ -30,7 +30,7 @@ def glasses() -> str:
 
 
 def hair_color() -> str:
-    return "SaddleBrown"
+    return "None"
 
 
 def facial_hair() -> str:
@@ -41,7 +41,7 @@ def facial_hair() -> str:
 
 
 def facial_hair_color() -> str:
-    return "Sienna"
+    return "None"
 
 
 def gender_age() -> str:
