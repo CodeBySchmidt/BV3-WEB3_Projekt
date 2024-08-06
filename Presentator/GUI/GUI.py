@@ -3,7 +3,7 @@ import base64
 import signal
 import time
 
-import cv2
+import cmedian_color = np.median(v2
 import numpy as np
 from fastapi import Response
 

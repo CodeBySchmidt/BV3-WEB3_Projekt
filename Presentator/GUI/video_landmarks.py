@@ -146,7 +146,7 @@ class EyeColorDetector(FaceDetector):
         row = x[0]
         col = x[1]
 
-        array1 = roi_eye[(row // 2):(row // 2) + 1, int((col // 3) + 2):int((col // 3)) + 9]
+        array1 = roi_eye[(row // 2) + 12 :(row // 2) + 15, int((col // 3) + 10):int((col // 3)) + 25]
         array1 = array1[0][5]
         array1 = tuple(array1)
 
