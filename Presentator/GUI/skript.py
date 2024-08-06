@@ -17,40 +17,44 @@ predictor_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '
 #     return image
 
 
-def eye_color() -> str:
+async def eye_color() -> str:
     eye_color_detector = EyeColorDetector(predictor_path)
     result_eye_color = eye_color_detector.detect_eye_color(image_path)
     return result_eye_color
 
 
-def glasses() -> str:
+async def glasses() -> str:
     glasses_detector = GlassesDetector(predictor_path)
     result_glasses = glasses_detector.display_results(image_path)
     return result_glasses
 
 
-def hair_color() -> str:
+async def hair_color() -> str:
     return "None"
 
 
-def facial_hair() -> str:
+async def facial_hair() -> str:
+    """
+
+    :rtype: object
+    """
     # beard_detector = Beard_detector(predictor_path)
     # result_beard = beard_detector.display_results(image_path)
     # return result_beard
     return "None"
 
 
-def facial_hair_color() -> str:
+async def facial_hair_color() -> str:
     return "None"
 
 
-def gender_age() -> str:
+async def gender_age() -> str:
     detector = GenderAgeDetector(age_model, age_proto, gender_model, gender_proto, predictor_path)
     gender_result = detector.process_image(image_path)[0]
     age_result = detector.process_image(image_path)[1]
     return gender_result, age_result
 
 
-def race() -> str:
+async def race() -> str:
     return "European"
 

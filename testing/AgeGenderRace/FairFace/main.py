@@ -63,6 +63,7 @@ class FairFaceDataset(Dataset):
     def __len__(self):
         return self.n_samples
 
+
 # Hyperparameters
 learning_rate = 0.01
 epochs = 50
@@ -84,6 +85,7 @@ val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
 
 print(f'Train Dataset: {len(train_dataset)} samples')
 print(f'Validation Dataset: {len(val_dataset)} samples')
+
 
 #Model
 class ConvNet(nn.Module):
