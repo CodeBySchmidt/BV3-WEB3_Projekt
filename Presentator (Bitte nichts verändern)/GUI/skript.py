@@ -1,4 +1,4 @@
-from video_landmarks import FaceDetector, EyeColorDetector, GlassesDetector, GenderAgeDetector
+from video_landmarks import FaceDetector, EyeColorDetector, GlassesDetector, GenderAgeDetector, HairColorDetector
 import os
 
 
@@ -29,9 +29,11 @@ async def glasses() -> str:
     return result_glasses
 
 
-async def hair_color() -> str:
-    return "None"
-
+async def hair_color():
+    # hair_type_detector = HairColorDetector(predictor_path)
+    # result_hair_typ = hair_type_detector.find_hair_color(image_path)
+    # return result_hair_typ
+    return "NONE"
 
 async def facial_hair() -> str:
     """

@@ -77,6 +77,82 @@ class GlassesDetector(FaceDetector):
             return None
 
 
+def calculate_median_color(image):
+    """
+    Berechnet die Medianfarbe eines Bildes.
+
+    Args:
+        image (np.array): Das Bild als numpy-Array.
+
+    Returns:
+        tuple: Die Medianfarbe als (B, G, R)-Tupel, falls das Bild farbig ist,
+               oder als Grauwert-Tupel, falls das Bild ein Graustufenbild ist.
+    """
+    if len(image.shape) == 3:
+        median_b = np.median(image[:, :, 0].flatten())
+        median_g = np.median(image[:, :, 1].flatten())
+        median_r = np.median(image[:, :, 2].flatten())
+        return (median_b, median_g, median_r)
+    else:
+        median_value = np.median(image.flatten())
+        return (median_value, median_value, median_value)
+
+
+class HairColorDetector(FaceDetector):
+    def __init__(self, predictor_path: str):
+        super().__init__(predictor_path)
+
+    def crop_face(self, image):
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        rects = self.detector(gray, 1)
+
+        if rects:
+            rect = rects[0]
+            landmarks = self.predictor(gray, rect)
+            face_utils.shape_to_np(landmarks)
+            (x, y, w, h) = face_utils.rect_to_bb(rect)
+
+            # Berechnung der Bounding Box
+            x1 = max(0, x)
+            y1 = max(0, y - h // 2)
+            x2 = min(image.shape[1], x + w)
+            y2 = min(image.shape[0], y + h)
+
+            cropped_image = image[y1:y2, x1:x2]
+            img = image[y:y + h, x:x + w]
+
+            # Oberer Teil des Gesichts
+            upper_part = cropped_image[:int(cropped_image.shape[0] * 0.25), :]
+
+            return upper_part, img
+        else:
+            return None, None
+
+    def find_hair_color(self, image_path):
+        if not os.path.isfile(image_path):
+            return "Image does not exist"
+
+        image = dlib.load_rgb_image(image_path)
+        upper_part, img = self.crop_face(image)
+
+        median_color_hair = calculate_median_color(upper_part)
+        median_color_skin = calculate_median_color(img)
+
+        # Vergleich der Medianfarben
+        hair_diff = np.sqrt((median_color_hair[0] - median_color_skin[0]) ** 2 +
+                            (median_color_hair[1] - median_color_skin[1]) ** 2 +
+                            (median_color_hair[2] - median_color_skin[2]) ** 2)
+        # print(f"Unterschied der Farbwerte von Haar und Haut: {hair_diff}")
+
+        # Schwellwert für den Farbunterschied
+        threshold = 60
+
+        if hair_diff < threshold:
+            return "Glatze"
+        else:
+            return "Keine Glatze"
+
+
 class EyeColorDetector(FaceDetector):
     def __init__(self, predictor_path: str):
         super().__init__(predictor_path)
@@ -146,7 +222,7 @@ class EyeColorDetector(FaceDetector):
         row = x[0]
         col = x[1]
 
-        array1 = roi_eye[(row // 2) + 12 :(row // 2) + 15, int((col // 3) + 10):int((col // 3)) + 25]
+        array1 = roi_eye[(row // 2):(row // 2) + 1, int((col // 3) + 2):int((col // 3)) + 9]
         array1 = array1[0][5]
         array1 = tuple(array1)
 

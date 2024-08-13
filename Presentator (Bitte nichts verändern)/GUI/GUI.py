@@ -3,7 +3,7 @@ import base64
 import signal
 import time
 
-import cmedian_color = np.median(v2
+import cv2
 import numpy as np
 from fastapi import Response
 
@@ -123,8 +123,8 @@ async def image_processing():
     output_2_color.style(f"background-color: {get_color_name_or_hex(facial_hair_color_result)} !important;")
     output_2_color.set_text(facial_hair_color_result)
 
-    output_3_color.style(f"background-color: {get_color_name_or_hex(hair_color_result)} !important;")
-    output_3_color.set_text(hair_color_result)
+    # output_3_color.style(f"background-color: {get_color_name_or_hex(hair_color_result)} !important;")
+    # output_3_color.set_text(hair_color_result)
 
 
 async def button_clicked():

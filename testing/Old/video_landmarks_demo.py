@@ -61,11 +61,9 @@ while True:
             #              (0, 255, 0), 2)
 
         # draws circle with labels
-
         for idx, (x, y) in enumerate(shape):
             cv2.circle(image, (x, y), 2, (0, 255, 0), -1)
             cv2.putText(image, str(idx), (x, y), cv2.FONT_HERSHEY_SIMPLEX, 0.3, (0, 255, 0), 1)
-
 
     # show the output image with the face detections + facial landmarks
     # esc for exit!
