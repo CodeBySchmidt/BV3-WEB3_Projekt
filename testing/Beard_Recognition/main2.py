@@ -9,7 +9,7 @@ from onnxruntime import InferenceSession
 
 # Hat/beard classifier parameters.
 INPUT_SHAPE = (128, 128, 3)
-CLASSIFIER_MODEL_PATH = os.path.abspath(os.path.join('testing', 'Beard_Recognition', 'hat_beard_model.onnx'))
+CLASSIFIER_MODEL_PATH = os.path.abspath(os.path.join('BV3-WEB3_Projekt', 'testing', 'Beard_Recognition', 'hat_beard_model.onnx'))
 
 # Debugging information.
 if not os.path.exists(CLASSIFIER_MODEL_PATH):
@@ -76,15 +76,18 @@ class HatBeardClassifier:
 
 
 class OnnxModelLoader:
-    def __init__(self, onnx_path: str):
-        self.sess = InferenceSession(onnx_path, providers=['CPUExecutionProvider'])
+    def __init__(self, model_path):
+        import onnxruntime as ort
+        self.sess = ort.InferenceSession(model_path)
+        self.input_name = self.sess.get_inputs()[0].name
+        self.output_names = [output.name for output in self.sess.get_outputs()]  # Ensure output_names is initialized
         """
         Class for loading ONNX models to inference on CPU. CPU inference is very effective using onnxruntime.
 
         :param onnx_path: path to ONNX model file (*.onnx file).
         """
 
-    def inference(self, inputs: np.ndarray) -> List[np.ndarray]:
+    def inference(self, inputs):
         """
         Run inference.
 
@@ -92,7 +95,6 @@ class OnnxModelLoader:
         :return: list of outputs.
         """
         return self.sess.run(self.output_names, input_feed={self.input_name: inputs})
-
 
 def preprocess_image(image: np.ndarray, input_shape: Tuple[int, int, int], bgr_to_rgb: bool = True) -> np.ndarray:
     """
@@ -221,9 +223,19 @@ def parse_args() -> argparse.Namespace:
 
 if __name__ == '__main__':
     SCALE_FACTOR = 1.0  # Set the scale factor as needed
+    CLASSIFIER_MODEL_PATH = 'E:\\BV3&WEB3 Projekt\\BV3-WEB3_Projekt\\testing\\Beard_Recognition\\hat_beard_model.onnx'
+    INPUT_SHAPE = (128, 128, 3)  # Set the input shape as needed
+
     detector = SimpleFaceDetector(SCALE_FACTOR)
     classifier = HatBeardClassifier(CLASSIFIER_MODEL_PATH, INPUT_SHAPE)
 
-    IMAGE_PATH = '1.jpg'  # Path to the image file
+    IMAGE_PATH = 'E:\\BV3&WEB3 Projekt\\BV3-WEB3_Projekt\\testing\\Beard_Recognition\\1.jpg'  # Correct path to the image file
     args = parse_args()
     process_image(IMAGE_PATH, not args.no_detector)
+
+    #Debugging information.
+    if not os.path.exists(IMAGE_PATH):
+        print(f"Image file not found at path: {IMAGE_PATH}")
+    else:
+        args = parse_args()
+        process_image(IMAGE_PATH, not args.no_detector)
