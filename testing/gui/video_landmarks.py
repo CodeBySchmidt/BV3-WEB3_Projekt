@@ -146,8 +146,22 @@ class EyeColorDetector(FaceDetector):
         row = x[0]
         col = x[1]
 
-        array1 = roi_eye[(row // 2):(row // 2) + 1, int((col // 3) + 2):int((col // 3)) + 9]
-        array1 = array1[0][5]
+        # Definiere die Schwellwerte
+        upper_threshold = 230
+        lower_threshold = 30
+
+        # Definiere die ROI für die Pixel direkt unter der Pupille
+        roi_px = roi_eye[(row // 2):(row // 2) + 15, int((col // 3) + 10):int((col // 3)) + 25].reshape(-1, 3)
+
+        # Filtere Pixel basierend auf den Schwellwerten
+        filtered_array1 = np.array(
+            [pixel for pixel in roi_px if all(lower_threshold <= channel <= upper_threshold for channel in pixel)])
+
+        if len(filtered_array1) > 0:
+            array1 = np.median(filtered_array1, axis=0).astype(int)
+        else:
+            array1 = [0, 0, 0]
+
         array1 = tuple(array1)
 
         color_name = self.find_color(array1)
