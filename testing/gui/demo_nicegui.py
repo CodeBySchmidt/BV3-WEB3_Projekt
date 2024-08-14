@@ -96,36 +96,41 @@ state = True
 
 async def image_processing():
 
-    await asyncio.sleep(1)  # Async sleep anstelle von blockierendem sleep
+    await asyncio.sleep(0.1)  # Async sleep anstelle von blockierendem sleep
 
     # Dummy Funktionen für Bildverarbeitung
-    facial_hair_result = await facial_hair()
-    facial_hair_color_result = await facial_hair_color()
-    glasses_result = await glasses()
-    hair_color_result = await hair_color()
+    hair_color_and_typ = await hair_color()
+
     eye_color_result = await eye_color()
-    race_result = await race()
-    gender_age_result = await gender_age()
+    glasses_result = await glasses()
 
     # Labels aktualisieren, um den neuen Wert anzuzeigen
-    facial_hair_label.set_text(facial_hair_result)
-    facial_hair_color_label.set_text(facial_hair_color_result)
+    hair_typ_label.set_text(hair_color_and_typ[1])
     glasses_label.set_text(glasses_result)
-    hair_color_label.set_text(hair_color_result)
+    hair_color_label.set_text(hair_color_and_typ[0])
     eye_color_label.set_text(eye_color_result)
-    race_label.set_text(race_result)
-    gender_label.set_text(gender_age_result[0])
-    age_label.set_text(gender_age_result[1])
 
     # Hintergrundfarben der Labels aktualisieren
     output_1_color.style(f"background-color: {get_color_name_or_hex(eye_color_result)} !important;")
     output_1_color.set_text(eye_color_result)
 
-    output_2_color.style(f"background-color: {get_color_name_or_hex(facial_hair_color_result)} !important;")
-    output_2_color.set_text(facial_hair_color_result)
+    # Hair Color
+    output_3_color.style(f"background-color: {get_color_name_or_hex(hair_color_and_typ[0])} !important;")
+    output_3_color.set_text(hair_color_and_typ[0])
 
-    output_3_color.style(f"background-color: {get_color_name_or_hex(hair_color_result)} !important;")
-    output_3_color.set_text(hair_color_result)
+
+async def neural_networks():
+    await asyncio.sleep(0.1)
+
+    facial_hair_result = await facial_hair()
+    race_result = await race()
+    gender_age_result = await gender_age()
+
+    # Labels aktualisieren, um den neuen Wert anzuzeigen
+    facial_hair_label.set_text(facial_hair_result)
+    race_label.set_text(race_result)
+    gender_label.set_text(gender_age_result[0])
+    age_label.set_text(gender_age_result[1])
 
 
 async def button_clicked():
@@ -134,8 +139,8 @@ async def button_clicked():
     if state:
         video_image.set_visibility(False)
 
-    # Startet die Bildverarbeitung asynchron
     await asyncio.create_task(image_processing())
+    await asyncio.create_task(neural_networks())
 
     video_image.set_visibility(True)
 
@@ -151,8 +156,7 @@ def get_color_name_or_hex(input_value):
             # print(f"Hex: {hex_color} passender Name: {color_name}")
             return color_name
         else:
-            return
-            # print(f"Hex: {hex_color} ist nicht findbar in CSS3_HEX_TO_NAMES.")
+            print(f"Hex: {hex_color} ist nicht findbar in CSS3_HEX_TO_NAMES.")
     else:
         # Wenn der input_value ein Name ist, dann wird dieser zu einem Hex umgewandelt
         color_name = input_value.lower()
@@ -221,13 +225,14 @@ ui.query("body").classes("primary")
 
 # Erstelle das Grid mit den farbigen Labels
 with ui.grid(rows=6, columns=16).classes("gap-5 w-full p-5").style("height: 95vh;"):
+    # Erste Zeile -> Logo
     with ui.element("container_logo").classes("row-start-1 row-span-1 col-span-5 h-auto rounded secondary flex justify-center items-center overflow-hidden"):
         ui.label("Logo").classes("text-white flex justify-center items-center text-3xl")
 
     with ui.element("container_outputs").classes("row-start-2 row-span-4 col-span-5 rounded"):
         with ui.grid(rows=4, columns=2).classes("h-full w-full gap-5"):
 
-            # Erste Zeile -> Logo
+            # Erste Zeile Hair Color
             with ui.element("container_output_1").classes(
                     "rounded col-span-2 row-start-1 grid grid-cols-2 gap-2 secondary overflow-hidden drop-shadow-[10px_12px_3px_rgba(0,0,0,0.25)]"):
                 # output_3 links
@@ -242,35 +247,17 @@ with ui.grid(rows=6, columns=16).classes("gap-5 w-full p-5").style("height: 95vh
                         "bg-white text-black p-5 rounded flex justify-center items-center inset-shadow").style(
                         "height: 80%; width: 80%")
 
-            # Zweite Zeile # output_4 links -> Facial Hair
-            with ui.element("output_4").classes(
-                    "col-start-1 col-span-1 row-start-2 row-span-1 rounded secondary overflow-hidden flex flex-col justify-center items-start pl-10 drop-shadow-[10px_12px_3px_rgba(0,0,0,0.25)]"):
-                facial_hair_label = ui.label("None").classes("text-3xl").style("color: white;")
-                ui.label("Facial Hair").classes("text-lg").style("color: white;")
-
-            # Zweite Zeile # output_5 rechts -> Glasses
-            with ui.element("output_5").classes(
-                    "col-start-2 col-span-1 row-start-2 row-span-1 rounded secondary overflow-hidden flex flex-col justify-center items-start pl-10 drop-shadow-[10px_12px_3px_rgba(0,0,0,0.25)]"):
-                glasses_label = ui.label("None").classes("text-3xl").style("color: white;")
-                ui.label("Glasses").classes("text-lg").style("color: white;")
-
-            # Dritte Zeile -> Hair Color
-            with ui.element("container_output_2").classes("rounded col-span-2 row-start-3 grid grid-cols-2 gap-2 secondary overflow-hidden drop-shadow-[10px_12px_3px_rgba(0,0,0,0.25)]"):
+            # Zweite Zeile -> Hair Type
+            with ui.element("container_output_2").classes("rounded col-span-2 row-start-2 grid gap-2 secondary overflow-hidden drop-shadow-[10px_12px_3px_rgba(0,0,0,0.25)]"):
                 # output_2 links
                 with ui.element("output_2").classes(
                         "col-start-1 col-span-1 row-start-1 row-span-1 flex flex-col justify-center items-start pl-10"):
-                    facial_hair_color_label = ui.label("None").classes("text-3xl").style("color: white;")
-                    ui.label("Facial Hair Color").classes("text-lg").style("color: white;")
+                    hair_typ_label = ui.label("None").classes("text-3xl").style("color: white;")
+                    ui.label("Hair Type").classes("text-lg").style("color: white;")
 
-                # output_2_color rechts
-                with ui.element("output_2_color").classes(
-                        "col-start-2 col-span-1 row-start-1 row-span-1 flex justify-center items-center"):
-                    output_2_color = ui.label("None").classes(
-                        "text-black bg-white p-5 rounded flex justify-center items-center inset-shadow").style(
-                        "height: 80%; width: 80%")
 
-            # Vierte Zeile -> Eye Color
-            with ui.element("container_output_3").classes("rounded col-span-2 row-start-4 grid grid-cols-2 gap-2 secondary overflow-hidden drop-shadow-[10px_12px_3px_rgba(0,0,0,0.25)]"):
+            # Dritte Zeile -> Eye Color
+            with ui.element("container_output_3").classes("rounded col-span-2 row-start-3 grid grid-cols-2 gap-2 secondary overflow-hidden drop-shadow-[10px_12px_3px_rgba(0,0,0,0.25)]"):
                 # output_1 links
                 with ui.element("output_1").classes(
                         "col-start-1 col-span-1 row-start-1 row-span-1 flex flex-col justify-center items-start pl-10"):
@@ -284,11 +271,22 @@ with ui.grid(rows=6, columns=16).classes("gap-5 w-full p-5").style("height: 95vh
                         "text-black bg-white p-5 rounded flex justify-center items-center inset-shadow").style(
                         "height: 80%; width: 80%;")
 
+            # Vierte Zeile # output_4 links -> Facial Hair
+            with ui.element("output_4").classes(
+                    "col-start-1 col-span-1 row-start-4 row-span-1 rounded secondary overflow-hidden flex flex-col justify-center items-start pl-10 drop-shadow-[10px_12px_3px_rgba(0,0,0,0.25)]"):
+                facial_hair_label = ui.label("None").classes("text-3xl").style("color: white;")
+                ui.label("Facial Hair").classes("text-lg").style("color: white;")
+
+            # Zweite Zeile # output_5 rechts -> Glasses
+            with ui.element("output_5").classes(
+                    "col-start-2 col-span-1 row-start-4 row-span-1 rounded secondary overflow-hidden flex flex-col justify-center items-start pl-10 drop-shadow-[10px_12px_3px_rgba(0,0,0,0.25)]"):
+                glasses_label = ui.label("None").classes("text-3xl").style("color: white;")
+                ui.label("Glasses").classes("text-lg").style("color: white;")
 
     with ui.element("container_camera").classes("container_camera col-span-11 row-start-1 row-span-5 h-auto flex justify-center items-center rounded p-1 secondary overflow-hidden drop-shadow-[10px_12px_3px_rgba(0,0,0,0.25)]"):
         video_image = ui.interactive_image().classes("h-full w-full object-contain")
         camera_label = ui.label("Calculating...").classes("text-3xl").style("color: white;")
-        ui.spinner(type="oval", size="4em", thickness="8").classes("m-5")
+        ui.spinner(size="4em", thickness="5").classes("m-5")
 
     with ui.element("container_ki").classes("col-span-12 row-start-6 rounded pr-6 overflow-hidden"):
         with ui.grid(rows=1, columns=3).classes("h-full w-full gap-5 pb-4"):

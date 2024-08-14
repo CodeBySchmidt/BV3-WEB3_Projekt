@@ -1,4 +1,4 @@
-from video_landmarks import FaceDetector, EyeColorDetector, GlassesDetector, GenderAgeDetector
+from video_landmarks import EyeColorDetector, GlassesDetector, GenderAgeDetector, HairColorDetector
 import os
 
 
@@ -9,12 +9,6 @@ age_model = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'Utils
 gender_proto = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'Utils', 'gender_deploy.prototxt'))
 gender_model = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'Utils', 'gender_net.caffemodel'))
 predictor_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'Utils', 'shape_predictor_68_face_landmarks.dat'))
-
-# Wird eventuell gar nicht benötigt
-# def get_screenshot():
-#     detector = FaceLandmarkDetector(predictor_path)
-#     image = detector.take_screenshot("screenshot.jpg")
-#     return image
 
 
 async def eye_color() -> str:
@@ -29,23 +23,15 @@ async def glasses() -> str:
     return result_glasses
 
 
-async def hair_color() -> str:
-    return "None"
-
-
 async def facial_hair() -> str:
-    """
-
-    :rtype: object
-    """
-    # beard_detector = Beard_detector(predictor_path)
-    # result_beard = beard_detector.display_results(image_path)
-    # return result_beard
     return "None"
 
 
-async def facial_hair_color() -> str:
-    return "None"
+async def hair_color():
+    hair_type_detector = HairColorDetector(predictor_path)
+    result_hair_color, result_hair_typ = hair_type_detector.find_hair_color(image_path)
+    return result_hair_color, result_hair_typ
+    # return "None"
 
 
 async def gender_age() -> str:
