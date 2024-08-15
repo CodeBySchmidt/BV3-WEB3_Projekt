@@ -210,7 +210,7 @@ def process_image(image_path: str, use_detector: bool) -> None:
         image = draw_results(image, [[0, image.shape[0] - 1, 0, 0]], [class_result])
     cv2.imshow('Image', image)
     if cv2.waitKey(0) == ord('q'):
-        return
+        return class_result["beard"]
 
 
 def parse_args() -> argparse.Namespace:
@@ -228,6 +228,6 @@ if __name__ == '__main__':
     detector = SimpleFaceDetector(SCALE_FACTOR)
     classifier = HatBeardClassifier(CLASSIFIER_MODEL_PATH, INPUT_SHAPE)
 
-    IMAGE_PATH = os.path.join('testing', 'Beard_Recognition', '2.jpg')
+    IMAGE_PATH = ('E:\BV3&WEB3 Projekt\current_frame.jpg')
     args = parse_args()
     process_image(IMAGE_PATH, not args.no_detector)
