@@ -1,12 +1,9 @@
 import os
-import threading
-import time
 import numpy as np
 import dlib
 import cv2
 import webcolors
 from imutils import face_utils
-import matplotlib.pyplot as plt
 
 
 class FaceDetector:
@@ -77,25 +74,42 @@ class GlassesDetector(FaceDetector):
             return None
 
 
+class ColorFinder:
+    def find_color(self, requested_colour):
+        min_colours = {}
+        for name, key in webcolors.CSS3_HEX_TO_NAMES.items():
+            r_c, g_c, b_c = webcolors.hex_to_rgb(name)
+            bd = (b_c - requested_colour[0]) ** 2
+            gd = (g_c - requested_colour[1]) ** 2
+            rd = (r_c - requested_colour[2]) ** 2
+            min_colours[(rd + gd + bd)] = key
+        closest_name = min_colours[min(min_colours.keys())]
+        return closest_name
+
+
 def calculate_median_color(image):
     """
-    Berechnet die Medianfarbe eines Bildes.
+    Berechnet die Medianfarbe eines Bildes und gibt sowohl die RGB-Werte
+    als auch den Hex-Farbwert zurück.
 
     Args:
         image (np.array): Das Bild als numpy-Array.
 
     Returns:
-        tuple: Die Medianfarbe als (B, G, R)-Tupel, falls das Bild farbig ist,
-               oder als Grauwert-Tupel, falls das Bild ein Graustufenbild ist.
+        tuple: Die Medianfarbe als ((B, G, R), Hex-Farbwert)-Tupel, falls das Bild farbig ist,
+               oder als ((Grauwert, Grauwert, Grauwert), Hex-Farbwert)-Tupel, falls das Bild
+               ein Graustufenbild ist.
     """
     if len(image.shape) == 3:
-        median_b = np.median(image[:, :, 0].flatten())
-        median_g = np.median(image[:, :, 1].flatten())
-        median_r = np.median(image[:, :, 2].flatten())
-        return (median_b, median_g, median_r)
+        median_b = int(np.median(image[:, :, 0].flatten()))
+        median_g = int(np.median(image[:, :, 1].flatten()))
+        median_r = int(np.median(image[:, :, 2].flatten()))
+        hex_color = '#{:02x}{:02x}{:02x}'.format(median_r, median_g, median_b)
+        return (median_b, median_g, median_r), hex_color
     else:
-        median_value = np.median(image.flatten())
-        return (median_value, median_value, median_value)
+        median_value = int(np.median(image.flatten()))
+        hex_color = '#{:02x}{:02x}{:02x}'.format(median_value, median_value, median_value)
+        return (median_value, median_value, median_value), hex_color
 
 
 class HairColorDetector(FaceDetector):
@@ -135,8 +149,11 @@ class HairColorDetector(FaceDetector):
         image = dlib.load_rgb_image(image_path)
         upper_part, img = self.crop_face(image)
 
-        median_color_hair = calculate_median_color(upper_part)
-        median_color_skin = calculate_median_color(img)
+        median_color_hair, hair_hex = calculate_median_color(upper_part)
+        median_color_skin, skin_hex = calculate_median_color(img)
+
+        color_finder = ColorFinder()
+        color_name = color_finder.find_color(median_color_hair)
 
         # Vergleich der Medianfarben
         hair_diff = np.sqrt((median_color_hair[0] - median_color_skin[0]) ** 2 +
@@ -148,9 +165,9 @@ class HairColorDetector(FaceDetector):
         threshold = 60
 
         if hair_diff < threshold:
-            return "Glatze"
+            return color_name, "Probably a bald spot or a bald head"
         else:
-            return "Keine Glatze"
+            return color_name, "Possible not bald or balding"
 
 
 class EyeColorDetector(FaceDetector):
@@ -222,8 +239,22 @@ class EyeColorDetector(FaceDetector):
         row = x[0]
         col = x[1]
 
-        array1 = roi_eye[(row // 2):(row // 2) + 1, int((col // 3) + 2):int((col // 3)) + 9]
-        array1 = array1[0][5]
+        # Definiere die Schwellwerte
+        upper_threshold = 230
+        lower_threshold = 30
+
+        # Definiere die ROI für die Pixel direkt unter der Pupille
+        roi_px = roi_eye[(row // 2):(row // 2) + 15, int((col // 3) + 10):int((col // 3)) + 25].reshape(-1, 3)
+
+        # Filtere Pixel basierend auf den Schwellwerten
+        filtered_array1 = np.array(
+            [pixel for pixel in roi_px if all(lower_threshold <= channel <= upper_threshold for channel in pixel)])
+
+        if len(filtered_array1) > 0:
+            array1 = np.median(filtered_array1, axis=0).astype(int)
+        else:
+            array1 = [0, 0, 0]
+
         array1 = tuple(array1)
 
         color_name = self.find_color(array1)
@@ -346,93 +377,95 @@ class GenderAgeDetector(FaceDetector):
 
 
 class BeardDetector:
-    
+
     def init(self, predictor_path):
         self.detector = dlib.get_frontal_face_detector()
         self.predictor = dlib.shape_predictor(predictor_path)
 
 
-class FaceLandmarkDetector:
-    def __init__(self, predictor_path, camera_index=0):
-        self.detector = dlib.get_frontal_face_detector()
-        self.predictor = dlib.shape_predictor(predictor_path)
-        self.cap = cv2.VideoCapture(camera_index)
+# Alter Code
 
-        if not self.cap.isOpened():
-            raise RuntimeError(
-                "Kamera konnte nicht geöffnet werden. Überprüfen Sie den Kamera-Index und ob die Kamera angeschlossen "
-                "ist.")
-
-    def detect_and_draw_landmarks(self, image, draw_circles=True):
-        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-        rects = self.detector(gray, 0)
-
-        for (i, rect) in enumerate(rects):
-            shape = self.predictor(gray, rect)
-            shape = face_utils.shape_to_np(shape)
-
-            # Nur Kreise zeichnen, wenn draw_circles True ist
-            if draw_circles:
-                for (x, y) in shape:
-                    cv2.circle(image, (x, y), 2, (0, 255, 0), -1)
-
-        return image
-
-    def get_frame(self):
-        ret, frame = self.cap.read()
-        if not ret:
-            return None
-        frame_with_circles = self.detect_and_draw_landmarks(frame)
-        return cv2.cvtColor(frame_with_circles, cv2.COLOR_BGR2RGB)  # Convert BGR to RGB for Tkinter
-
-    def save_screenshot(self, file_path):
-        ret, frame = self.cap.read()
-        if ret:
-            frame_without_circles = self.detect_and_draw_landmarks(frame, draw_circles=False)
-            cv2.imwrite(file_path, frame_without_circles)
-            print(f"Screenshot saved to {file_path}")
-            return frame_without_circles
-        else:
-            print("Failed to capture image.")
-
-    # take_screenshot braucht man eventuell nicht mehr
-    def take_screenshot(self, file_path):
-        time.sleep(5)  # Wait for 5 seconds
-        self.save_screenshot(file_path)
-
-    def show_live_video(self):
-        screenshot_path = "screenshot.jpg"
-        screenshot_thread = threading.Thread(target=self.save_screenshot, args=(screenshot_path,))
-        screenshot_thread.start()
-
-        start_time = time.time()
-        while True:
-            ret, frame = self.cap.read()
-            if not ret or time.time() - start_time > 6:
-                break
-            frame_with_circles = self.detect_and_draw_landmarks(frame)
-            cv2.imshow("Live Video - Press ESC to exit", frame_with_circles)
-
-            k = cv2.waitKey(5) & 0xFF
-            if k == 27:  # ESC key to break
-                break
-
-        screenshot_thread.join()  # Warten Sie darauf, dass der Screenshot-Thread abgeschlossen ist
-        self.cap.release()
-        cv2.destroyAllWindows()
-
-    def update_image(self, img_element):
-        while True:
-            frame = self.get_frame()
-            if frame is None:
-                break
-            # Convert the frame to a format suitable for display in niceGUI
-            frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
-            ret, buffer = cv2.imencode('.jpg', frame)
-            if not ret:
-                continue
-            img_element.source = f'data:image/jpeg;base64,{buffer.tobytes().encode("base64").decode()}'
-            time.sleep(0.1)
+# class FaceLandmarkDetector:
+#     def __init__(self, predictor_path, camera_index=0):
+#         self.detector = dlib.get_frontal_face_detector()
+#         self.predictor = dlib.shape_predictor(predictor_path)
+#         self.cap = cv2.VideoCapture(camera_index)
+#
+#         if not self.cap.isOpened():
+#             raise RuntimeError(
+#                 "Kamera konnte nicht geöffnet werden. Überprüfen Sie den Kamera-Index und ob die Kamera angeschlossen "
+#                 "ist.")
+#
+#     def detect_and_draw_landmarks(self, image, draw_circles=True):
+#         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+#         rects = self.detector(gray, 0)
+#
+#         for (i, rect) in enumerate(rects):
+#             shape = self.predictor(gray, rect)
+#             shape = face_utils.shape_to_np(shape)
+#
+#             # Nur Kreise zeichnen, wenn draw_circles True ist
+#             if draw_circles:
+#                 for (x, y) in shape:
+#                     cv2.circle(image, (x, y), 2, (0, 255, 0), -1)
+#
+#         return image
+#
+#     def get_frame(self):
+#         ret, frame = self.cap.read()
+#         if not ret:
+#             return None
+#         frame_with_circles = self.detect_and_draw_landmarks(frame)
+#         return cv2.cvtColor(frame_with_circles, cv2.COLOR_BGR2RGB)  # Convert BGR to RGB for Tkinter
+#
+#     def save_screenshot(self, file_path):
+#         ret, frame = self.cap.read()
+#         if ret:
+#             frame_without_circles = self.detect_and_draw_landmarks(frame, draw_circles=False)
+#             cv2.imwrite(file_path, frame_without_circles)
+#             print(f"Screenshot saved to {file_path}")
+#             return frame_without_circles
+#         else:
+#             print("Failed to capture image.")
+#
+#     # take_screenshot braucht man eventuell nicht mehr
+#     def take_screenshot(self, file_path):
+#         time.sleep(5)  # Wait for 5 seconds
+#         self.save_screenshot(file_path)
+#
+#     def show_live_video(self):
+#         screenshot_path = "screenshot.jpg"
+#         screenshot_thread = threading.Thread(target=self.save_screenshot, args=(screenshot_path,))
+#         screenshot_thread.start()
+#
+#         start_time = time.time()
+#         while True:
+#             ret, frame = self.cap.read()
+#             if not ret or time.time() - start_time > 6:
+#                 break
+#             frame_with_circles = self.detect_and_draw_landmarks(frame)
+#             cv2.imshow("Live Video - Press ESC to exit", frame_with_circles)
+#
+#             k = cv2.waitKey(5) & 0xFF
+#             if k == 27:  # ESC key to break
+#                 break
+#
+#         screenshot_thread.join()  # Warten Sie darauf, dass der Screenshot-Thread abgeschlossen ist
+#         self.cap.release()
+#         cv2.destroyAllWindows()
+#
+#     def update_image(self, img_element):
+#         while True:
+#             frame = self.get_frame()
+#             if frame is None:
+#                 break
+#             # Convert the frame to a format suitable for display in niceGUI
+#             frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+#             ret, buffer = cv2.imencode('.jpg', frame)
+#             if not ret:
+#                 continue
+#             img_element.source = f'data:image/jpeg;base64,{buffer.tobytes().encode("base64").decode()}'
+#             time.sleep(0.1)
 
 
 # if __name__ == "__main__":

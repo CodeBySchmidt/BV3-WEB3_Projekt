@@ -89,6 +89,7 @@ class ColorFinder:
         closest_name = min_colours[min(min_colours.keys())]
         return closest_name
 
+
 def calculate_median_color(image):
     """
     Berechnet die Medianfarbe eines Bildes und gibt sowohl die RGB-Werte
@@ -383,6 +384,9 @@ class BeardDetector:
     def init(self, predictor_path):
         self.detector = dlib.get_frontal_face_detector()
         self.predictor = dlib.shape_predictor(predictor_path)
+
+
+
 
 # Alter Code
 #

@@ -36,8 +36,7 @@ async def hair_color():
 
 async def gender_age() -> str:
     detector = GenderAgeDetector(age_model, age_proto, gender_model, gender_proto, predictor_path)
-    gender_result = detector.process_image(image_path)[0]
-    age_result = detector.process_image(image_path)[1]
+    gender_result, age_result = detector.process_image(image_path)
     return gender_result, age_result
 
 
