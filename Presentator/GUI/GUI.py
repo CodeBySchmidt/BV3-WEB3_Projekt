@@ -123,13 +123,14 @@ async def neural_networks():
 
     facial_hair_result = await facial_hair()
     race_result = await race()
-    gender_age_result = await gender_age()
+    age_gender_race_result = await gender_age_race()
 
     # Labels aktualisieren, um den neuen Wert anzuzeigen
     facial_hair_label.set_text(facial_hair_result)
     race_label.set_text(race_result)
-    gender_label.set_text(gender_age_result[0])
-    age_label.set_text(gender_age_result[1])
+    age_label.set_text(age_gender_race_result[0])
+    gender_label.set_text(age_gender_race_result[1])
+    race_label.set_text(age_gender_race_result[2])
 
 
 async def button_clicked():

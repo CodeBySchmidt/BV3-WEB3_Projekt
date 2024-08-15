@@ -4,6 +4,13 @@ import dlib
 import cv2
 import webcolors
 from imutils import face_utils
+import torch
+from torchvision import transforms
+from PIL import Image
+import matplotlib.pyplot as plt
+import torch.nn as nn
+from torchvision import models
+from torchvision.models.resnet import ResNet
 
 
 class FaceDetector:
@@ -301,80 +308,116 @@ class EyeColorDetector(FaceDetector):
             return None, gray, image
 
 
-class GenderAgeDetector(FaceDetector):
-    def __init__(self, age_model, age_proto, gender_model, gender_proto, predictor_path: str):
-        super().__init__(predictor_path)
-        self.ageNet = cv2.dnn.readNet(age_model, age_proto)
-        self.genderNet = cv2.dnn.readNet(gender_model, gender_proto)
-        self.detector = dlib.get_frontal_face_detector()
-        self.MODEL_MEAN_VALUES = (78.4263377603, 87.7689143744, 114.895847746)
-        self.ageList = ['(0-2)', '(4-6)', '(8-12)', '(15-20)', '(25-32)', '(38-43)', '(48-53)', '(60-100)']
-        self.genderList = ['Male', 'Female']
-        self.padding = 20
+class ConvNet(nn.Module):
+    def __init__(self):
+        super(ConvNet, self).__init__()
+        self.model = models.resnet18(weights=models.ResNet18_Weights.IMAGENET1K_V1)
+        self.model.fc = nn.Identity()
+        self.fc_age = nn.Sequential(
+            nn.Linear(512, 256),
+            nn.ReLU(),
+            nn.Linear(256, 9)
+        )
+        self.fc_gender = nn.Sequential(
+            nn.Linear(512, 256),
+            nn.ReLU(),
+            nn.Linear(256, 2)
+        )
+        self.fc_race = nn.Sequential(
+            nn.Linear(512, 256),
+            nn.ReLU(),
+            nn.Linear(256, 7)
+        )
+        
+    def forward(self, x):
+        x = self.model(x)
+        age = self.fc_age(x)
+        gender = self.fc_gender(x)
+        race = self.fc_race(x)
+        return age, gender, race
+    
+class AgeGenderRaceDetector():
+    
+    def __init__(self, image_path):
+        self.image_path = image_path
+    
+    def predict(self):
 
-    def highlight_face(self, frame):
-        frame_opencv_dnn = frame.copy()
-        gray = cv2.cvtColor(frame_opencv_dnn, cv2.COLOR_BGR2GRAY)
+        image_path = self.image_path
+        # Define the same transformations as used during training
+        transform = transforms.Compose([
+            transforms.Grayscale(num_output_channels=3),
+            transforms.Resize((224, 224)),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+        ])
 
-        faces = self.detector(gray)
-        face_boxes = []
+        # # Load your own image
+        # image_path = 'test.jpg'  # Replace with your image path
+        # image = Image.open(image_path)
+        image = Image.open(self.image_path)
+        
+        # Apply the transformations
+        image = transform(image)
+        image = image.unsqueeze(0)  # Add batch dimension
 
-        for face in faces:
-            x1 = face.left()
-            y1 = face.top()
-            x2 = face.right()
-            y2 = face.bottom()
-            face_boxes.append([x1, y1, x2, y2])
 
-            shape = self.predictor(gray, face)
+        model = ConvNet()
+        model.load_state_dict(torch.load(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'Utils', 'fairface_model_greyscale.pth'))))
+        # model.cpu()
+        model.eval()
 
-            for i in range(0, 68):
-                x = shape.part(i).x
-                y = shape.part(i).y
-                cv2.circle(frame_opencv_dnn, (x, y), 2, (0, 255, 0), -1)
+        with torch.no_grad():
+            # image = image.cuda()
+            pred_age, pred_gender, pred_race = model(image)
 
-        return frame_opencv_dnn, face_boxes
+        pred_age = torch.argmax(pred_age, dim=1).item()
+        pred_gender = torch.argmax(pred_gender, dim=1).item()
+        pred_race = torch.argmax(pred_race, dim=1).item()
 
-    def detect_age_gender(self, frame, face_box):
-        face = frame[max(0, face_box[1] - self.padding):
-                     min(face_box[3] + self.padding, frame.shape[0] - 1), max(0, face_box[0] - self.padding)
-                                                                          :min(face_box[2] + self.padding,
-                                                                               frame.shape[1] - 1)]
+        age_mapping = {
+            0: '0-2',
+            1: '3-9',
+            2: '10-19',
+            3: '20-29',
+            4: '30-39',
+            5: '40-49',
+            6: '50-59',
+            7: '60-69',
+            8: 'more than 70'
+        }
 
-        blob = cv2.dnn.blobFromImage(face, 1.0, (227, 227), self.MODEL_MEAN_VALUES, swapRB=False)
-        self.genderNet.setInput(blob)
-        gender_preds = self.genderNet.forward()
-        gender = self.genderList[gender_preds[0].argmax()]
+        gender_mapping = {
+            0: 'Male',
+            1: 'Female'
+        }
 
-        self.ageNet.setInput(blob)
-        age_preds = self.ageNet.forward()
-        age = self.ageList[age_preds[0].argmax()]
+        race_mapping = {
+            0: 'White',
+            1: 'Black',
+            2: 'Latino_Hispanic',
+            3: 'East Asian',
+            4: 'Southeast Asian',
+            5: 'Indian',
+            6: 'Middle Eastern'
+        }
 
-        return gender, age
+        # Convert predictions to labels
+        pred_age_label = age_mapping[pred_age]
+        pred_gender_label = gender_mapping[pred_gender]
+        pred_race_label = race_mapping[pred_race]
 
-    def process_image(self, image_path):
-        if not os.path.isfile(image_path):
-            return "Image does not exist", "Image does not exist"
+        # print(f'Predicted Age: {pred_age_label}')
+        # print(f'Predicted Gender: {pred_gender_label}')
+        # print(f'Predicted Race: {pred_race_label}')
 
-        frame = cv2.imread(image_path)
-        if frame is None:
-            print(f"Error: Unable to open image file {image_path}")
-            return
+        # # Optionally, display the image
+        # plt.imshow(Image.open(image_path))
+        # plt.title(f'Predicted Age: {pred_age_label}, Gender: {pred_gender_label}, Race: {pred_race_label}')
+        # plt.show()
 
-        result_img, face_boxes = self.highlight_face(frame)
-        if not face_boxes:
-            return "No face detected", "No face detected"
-
-        for faceBox in face_boxes:
-            gender, age = self.detect_age_gender(frame, faceBox)
-            # print(f'Gender: {gender}')
-            # print(f'Age: {age[1:-1]} years')
-
-            # cv2.putText(result_img, f'{gender}, {age}', (faceBox[0], faceBox[1] - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.8,
-            #             (0, 255, 255), 2, cv2.LINE_AA)
-
-            return gender, age
-
+        return  pred_age_label, pred_gender_label, pred_race_label
+    
 
 class BeardDetector:
 
@@ -507,3 +550,78 @@ class BeardDetector:
 #
 #     except Exception as e:
 #         print(f"Fehler beim Ausführen: {e}")
+
+
+# class GenderAgeDetector(FaceDetector):
+#     def __init__(self, age_model, age_proto, gender_model, gender_proto, predictor_path: str):
+#         super().__init__(predictor_path)
+#         self.ageNet = cv2.dnn.readNet(age_model, age_proto)
+#         self.genderNet = cv2.dnn.readNet(gender_model, gender_proto)
+#         self.detector = dlib.get_frontal_face_detector()
+#         self.MODEL_MEAN_VALUES = (78.4263377603, 87.7689143744, 114.895847746)
+#         self.ageList = ['(0-2)', '(4-6)', '(8-12)', '(15-20)', '(25-32)', '(38-43)', '(48-53)', '(60-100)']
+#         self.genderList = ['Male', 'Female']
+#         self.padding = 20
+
+#     def highlight_face(self, frame):
+#         frame_opencv_dnn = frame.copy()
+#         gray = cv2.cvtColor(frame_opencv_dnn, cv2.COLOR_BGR2GRAY)
+
+#         faces = self.detector(gray)
+#         face_boxes = []
+
+#         for face in faces:
+#             x1 = face.left()
+#             y1 = face.top()
+#             x2 = face.right()
+#             y2 = face.bottom()
+#             face_boxes.append([x1, y1, x2, y2])
+
+#             shape = self.predictor(gray, face)
+
+#             for i in range(0, 68):
+#                 x = shape.part(i).x
+#                 y = shape.part(i).y
+#                 cv2.circle(frame_opencv_dnn, (x, y), 2, (0, 255, 0), -1)
+
+#         return frame_opencv_dnn, face_boxes
+
+#     def detect_age_gender(self, frame, face_box):
+#         face = frame[max(0, face_box[1] - self.padding):
+#                      min(face_box[3] + self.padding, frame.shape[0] - 1), max(0, face_box[0] - self.padding)
+#                                                                           :min(face_box[2] + self.padding,
+#                                                                                frame.shape[1] - 1)]
+
+#         blob = cv2.dnn.blobFromImage(face, 1.0, (227, 227), self.MODEL_MEAN_VALUES, swapRB=False)
+#         self.genderNet.setInput(blob)
+#         gender_preds = self.genderNet.forward()
+#         gender = self.genderList[gender_preds[0].argmax()]
+
+#         self.ageNet.setInput(blob)
+#         age_preds = self.ageNet.forward()
+#         age = self.ageList[age_preds[0].argmax()]
+
+#         return gender, age
+
+#     def process_image(self, image_path):
+#         if not os.path.isfile(image_path):
+#             return "Image does not exist", "Image does not exist"
+
+#         frame = cv2.imread(image_path)
+#         if frame is None:
+#             print(f"Error: Unable to open image file {image_path}")
+#             return
+
+#         result_img, face_boxes = self.highlight_face(frame)
+#         if not face_boxes:
+#             return "No face detected", "No face detected"
+
+#         for faceBox in face_boxes:
+#             gender, age = self.detect_age_gender(frame, faceBox)
+#             # print(f'Gender: {gender}')
+#             # print(f'Age: {age[1:-1]} years')
+
+#             # cv2.putText(result_img, f'{gender}, {age}', (faceBox[0], faceBox[1] - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.8,
+#             #             (0, 255, 255), 2, cv2.LINE_AA)
+
+#             return gender, age

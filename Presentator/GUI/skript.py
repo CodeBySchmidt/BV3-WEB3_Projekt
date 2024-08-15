@@ -1,4 +1,4 @@
-from video_landmarks import FaceDetector, EyeColorDetector, GlassesDetector, GenderAgeDetector, HairColorDetector
+from video_landmarks import FaceDetector, EyeColorDetector, GlassesDetector, AgeGenderRaceDetector, HairColorDetector
 import os
 
 
@@ -40,11 +40,14 @@ async def hair_color():
     # return "None"
 
 
-async def gender_age() -> str:
-    detector = GenderAgeDetector(age_model, age_proto, gender_model, gender_proto, predictor_path)
-    gender_result = detector.process_image(image_path)[0]
-    age_result = detector.process_image(image_path)[1]
-    return gender_result, age_result
+async def gender_age_race() -> str:
+    # detector = GenderAgeDetector(age_model, age_proto, gender_model, gender_proto, predictor_path)
+    # gender_result = detector.process_image(image_path)[0]
+    # age_result = detector.process_image(image_path)[1]
+    # return gender_result, age_result
+    detector = AgeGenderRaceDetector(image_path)
+    age_result, gender_result, race_result = detector.predict()
+    return age_result, gender_result, race_result
 
 
 async def race() -> str:
