@@ -9,7 +9,7 @@ from onnxruntime import InferenceSession
 
 # Hat/beard classifier parameters.
 INPUT_SHAPE = (128, 128, 3)
-CLASSIFIER_MODEL_PATH = os.path.abspath(os.path.join('BV3-WEB3_Projekt', 'testing', 'Beard_Recognition', 'hat_beard_model.onnx'))
+CLASSIFIER_MODEL_PATH = os.path.join('testing', 'Beard_Recognition', 'hat_beard_classifier', 'hat_beard_model.onnx')
 
 # Debugging information.
 if not os.path.exists(CLASSIFIER_MODEL_PATH):
@@ -23,16 +23,17 @@ COORDINATES_EXTEND_VALUE = 0.2
 
 
 class HatBeardClassifier:
-    def __init__(self, model_path: str, input_shape: Tuple[int, int, int]):
-        self.model = OnnxModelLoader(model_path)
-        self.input_shape = input_shape
-        
+    def __init__(self, model_path: str, input_shape: Tuple[int, int, int]) -> None:
         """
         Class for easy using of hat/beard classifier.
 
         :param model_path: path to trained model, converted to ONNX format.
         :param input_shape: input shape tuple (height, width, channels).
         """
+        self.input_shape = input_shape
+
+        self.model = OnnxModelLoader(model_path)
+        self.class_names = ('No hat, no beard', 'Hat', 'Beard', 'Hat and beard')
 
     def inference(self, image: np.ndarray) -> Dict[str, Union[str, float]]:
         """
@@ -76,18 +77,18 @@ class HatBeardClassifier:
 
 
 class OnnxModelLoader:
-    def __init__(self, model_path):
-        import onnxruntime as ort
-        self.sess = ort.InferenceSession(model_path)
-        self.input_name = self.sess.get_inputs()[0].name
-        self.output_names = [output.name for output in self.sess.get_outputs()]  # Ensure output_names is initialized
+    def __init__(self, onnx_path: str) -> None:
         """
         Class for loading ONNX models to inference on CPU. CPU inference is very effective using onnxruntime.
 
         :param onnx_path: path to ONNX model file (*.onnx file).
         """
+        self.sess = InferenceSession(onnx_path, providers=['CPUExecutionProvider'])
 
-    def inference(self, inputs):
+        self.input_name = [x.name for x in self.sess.get_inputs()][0]
+        self.output_names = [x.name for x in self.sess.get_outputs()]
+
+    def inference(self, inputs: np.ndarray) -> List[np.ndarray]:
         """
         Run inference.
 
@@ -95,6 +96,7 @@ class OnnxModelLoader:
         :return: list of outputs.
         """
         return self.sess.run(self.output_names, input_feed={self.input_name: inputs})
+
 
 def preprocess_image(image: np.ndarray, input_shape: Tuple[int, int, int], bgr_to_rgb: bool = True) -> np.ndarray:
     """
@@ -223,19 +225,9 @@ def parse_args() -> argparse.Namespace:
 
 if __name__ == '__main__':
     SCALE_FACTOR = 1.0  # Set the scale factor as needed
-    CLASSIFIER_MODEL_PATH = 'E:\\BV3&WEB3 Projekt\\BV3-WEB3_Projekt\\testing\\Beard_Recognition\\hat_beard_model.onnx'
-    INPUT_SHAPE = (128, 128, 3)  # Set the input shape as needed
-
     detector = SimpleFaceDetector(SCALE_FACTOR)
     classifier = HatBeardClassifier(CLASSIFIER_MODEL_PATH, INPUT_SHAPE)
 
-    IMAGE_PATH = 'E:\\BV3&WEB3 Projekt\\BV3-WEB3_Projekt\\testing\\Beard_Recognition\\1.jpg'  # Correct path to the image file
+    IMAGE_PATH = os.path.join('testing', 'Beard_Recognition', '2.jpg')
     args = parse_args()
     process_image(IMAGE_PATH, not args.no_detector)
-
-    #Debugging information.
-    if not os.path.exists(IMAGE_PATH):
-        print(f"Image file not found at path: {IMAGE_PATH}")
-    else:
-        args = parse_args()
-        process_image(IMAGE_PATH, not args.no_detector)
