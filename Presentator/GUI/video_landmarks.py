@@ -361,9 +361,8 @@ class AgeGenderRaceDetector():
         image = transform(image)
         image = image.unsqueeze(0)  # Add batch dimension
 
-
         model = ConvNet()
-        model.load_state_dict(torch.load(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'Utils', 'fairface_model_greyscale.pth'))))
+        model.load_state_dict(torch.load(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'Utils', 'fairface_model_greyscale.pth')), map_location=torch.device('cpu')))
         # model.cpu()
         model.eval()
 
