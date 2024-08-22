@@ -55,7 +55,7 @@ def convert(frame: np.ndarray) -> bytes:
     return imencode_image.tobytes()
 
 
-def detect_and_draw_landmarks(frame, draw_landmarks=True):
+def detect_and_draw_landmarks(frame, draw_landmarks: bool):
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     rects = detector(gray, 0)
     for rect in rects:
@@ -77,10 +77,15 @@ async def grab_video_frame() -> Response:
     if not ret:
         return placeholder
 
-    jpeg = convert(detect_and_draw_landmarks(frame))
-    return Response(content=jpeg, media_type="image/jpeg")
+    if draw_landmarks_state:
+        jpeg = convert(detect_and_draw_landmarks(frame, draw_landmarks=draw_landmarks_state))
+        return Response(content=jpeg, media_type="image/jpeg")
+    else:
+        jpeg = convert(frame)
+        return Response(content=jpeg, media_type="image/jpeg")
 
 
+draw_landmarks_state = False
 state = True
 
 
@@ -119,6 +124,14 @@ async def neural_networks():
     age_label.set_text(age_gender_race_result[0])
     gender_label.set_text(age_gender_race_result[1])
     race_label.set_text(age_gender_race_result[2])
+
+
+# Methode, die aufgerufen wird, wenn die Checkbox geändert wird
+def on_checkbox_change(value):
+    global draw_landmarks_state
+
+    if value:
+        draw_landmarks_state = not draw_landmarks_state
 
 
 async def button_clicked():
@@ -219,6 +232,19 @@ ui.add_css('''
 #
 
 
+# @ui.page('/other_page')
+# def other_page():
+#     ui.label('Welcome to the other side')
+#
+#
+# @ui.page('/dark_page', dark=True)
+# def dark_page():
+#     ui.label('Welcome to the dark side')
+#
+#
+# ui.link('Visit other page', other_page)
+# ui.link('Visit dark page', dark_page)
+
 ui.query("body").classes("primary")
 
 # Erstelle das Grid mit den farbigen Labels
@@ -317,7 +343,10 @@ with ui.grid(rows=6, columns=16).classes("gap-5 w-full p-5").style("height: 95vh
                     gender_label = ui.label("None").classes("text-3xl").style("color: white;")
                     ui.label("Gender").classes("text-lg").style("color: white;")
 
-    with ui.element("container_button").classes("col-span-4 row-start-6 flex justify-end items-center overflow-hidden"):
+    with ui.element("container_button").classes("col-span-4 row-start-6 flex overflow-hidden"):
+
+        checkbox = ui.checkbox("Draw Landmarks").on_value_change(on_checkbox_change).classes("p-2 text-xl").style("color: white;")
+
         ui.button("Calculate", on_click=button_clicked).classes("btn btn-blue")
 
 # A timer constantly updates the source of the image.

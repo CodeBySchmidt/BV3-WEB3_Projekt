@@ -3,14 +3,13 @@ import numpy as np
 import dlib
 import cv2
 import webcolors
-from imutils import face_utils
 import torch
-from torchvision import transforms
-from PIL import Image
-import matplotlib.pyplot as plt
 import torch.nn as nn
+
+from torchvision import transforms
 from torchvision import models
-from torchvision.models.resnet import ResNet
+from PIL import Image
+from imutils import face_utils
 
 
 class FaceDetector:
