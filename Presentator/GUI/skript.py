@@ -25,7 +25,7 @@ async def eye_color() -> str:
 
 async def glasses() -> str:
     glasses_detector = GlassesDetector(predictor_path)
-    result_glasses = glasses_detector.display_results(image_path)
+    result_glasses = glasses_detector.detect_glasses(image_path)
     return result_glasses
 
 

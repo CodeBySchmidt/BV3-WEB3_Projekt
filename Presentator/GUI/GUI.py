@@ -114,7 +114,7 @@ async def image_processing():
     output_1_color.set_text(eye_color_result)
 
     # Hair Color
-    output_3_color.style(f"background-color: {get_color_name_or_hex(hair_color_and_typ[0])} !important;")
+    output_3_color.style(f"background-color: {hair_color_and_typ[0]} !important;")
     output_3_color.set_text(hair_color_and_typ[0])
 
 

@@ -41,37 +41,45 @@ class GlassesDetector(FaceDetector):
         img_cropped = img[y_min:y_max, x_min:x_max]
         return img_cropped
 
-    def detect_glasses(self, img):
-        faces = self.detect_face(img)
-        if faces is None:
-            return "No face detected"
-
-        rect = faces[0]
-        img_cropped = self.detect_nose_region(img, rect)
-        img_blur = cv2.GaussianBlur(img_cropped, (9, 9), sigmaX=0, sigmaY=0)
-        edges = cv2.Canny(image=img_blur, threshold1=100, threshold2=200)
-        edges_center = edges.T[(int(len(edges.T) / 2))]
-
-        if 255 in edges_center:
-            return True
-        else:
-            return False
-
-    def display_results(self, image_path):
+    def detect_glasses(self, image_path):
         if not os.path.isfile(image_path):
             return "Image does not exist"
 
         img = dlib.load_rgb_image(image_path)
-        glasses = self.detect_glasses(img)
 
-        if glasses == "No face detected":
+        faces = self.detect_face(img)
+
+        if faces is None:
             return "No face detected"
-        elif glasses == True:
-            return "Yes"
+
         else:
-            return "No"
+            face = faces[0]
+            img_cropped = self.detect_nose_region(img, face)
+            img_blur = cv2.GaussianBlur(img_cropped, (9, 9), sigmaX=0, sigmaY=0)
+            edges = cv2.Canny(image=img_blur, threshold1=100, threshold2=200)
+            edges_center = edges.T[(int(len(edges.T) / 2))]
+
+            if 255 in edges_center:
+                return "Yes"
+            else:
+                return "No"
+
+    # def display_results(self, image_path):
+    #     if not os.path.isfile(image_path):
+    #         return "Image does not exist"
+    #
+    #     img = dlib.load_rgb_image(image_path)
+    #     glasses = self.detect_glasses(img)
+    #
+    #     if glasses == "No face detected":
+    #         return "No face detected"
+    #     elif glasses == True:
+    #         return "Yes"
+    #     else:
+    #         return "No"
 
     def detect_face(self, image):
+
         gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
         faces = self.detector(gray)
 
@@ -107,6 +115,9 @@ def calculate_median_color(image):
                oder als ((Grauwert, Grauwert, Grauwert), Hex-Farbwert)-Tupel, falls das Bild
                ein Graustufenbild ist.
     """
+    if image is None:
+        return "No Face detected", "No Face detected"
+
     if len(image.shape) == 3:
         median_b = int(np.median(image[:, :, 0].flatten()))
         median_g = int(np.median(image[:, :, 1].flatten()))
@@ -122,6 +133,15 @@ def calculate_median_color(image):
 class HairColorDetector(FaceDetector):
     def __init__(self, predictor_path: str):
         super().__init__(predictor_path)
+
+    def detect_face(self, image):
+        gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
+        faces = self.detector(gray)
+
+        if len(faces) > 0:
+            return faces
+        else:
+            return None
 
     def crop_face(self, image):
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -151,30 +171,36 @@ class HairColorDetector(FaceDetector):
 
     def find_hair_color(self, image_path):
         if not os.path.isfile(image_path):
-            return "Image does not exist"
+            return "Image does not exist", "Image does not exist"
 
         image = dlib.load_rgb_image(image_path)
-        upper_part, img = self.crop_face(image)
 
-        median_color_hair, hair_hex = calculate_median_color(upper_part)
-        median_color_skin, skin_hex = calculate_median_color(img)
+        detected_face = self.detect_face(image)
 
-        color_finder = ColorFinder()
-        color_name = color_finder.find_color(median_color_hair)
-
-        # Vergleich der Medianfarben
-        hair_diff = np.sqrt((median_color_hair[0] - median_color_skin[0]) ** 2 +
-                            (median_color_hair[1] - median_color_skin[1]) ** 2 +
-                            (median_color_hair[2] - median_color_skin[2]) ** 2)
-        # print(f"Unterschied der Farbwerte von Haar und Haut: {hair_diff}")
-
-        # Schwellwert für den Farbunterschied
-        threshold = 60
-
-        if hair_diff < threshold:
-            return color_name, "Probably a bald spot or a bald head"
+        if detected_face is None:
+            return "No face detected", "No face detected"
         else:
-            return color_name, "Possible not bald or balding"
+            upper_part, img = self.crop_face(image)
+
+            median_color_hair, hair_hex = calculate_median_color(upper_part)
+            median_color_skin, skin_hex = calculate_median_color(img)
+
+            # color_finder = ColorFinder()
+            # color_name = color_finder.find_color(median_color_hair)
+
+            # Vergleich der Medianfarben
+            hair_diff = np.sqrt((median_color_hair[0] - median_color_skin[0]) ** 2 +
+                                (median_color_hair[1] - median_color_skin[1]) ** 2 +
+                                (median_color_hair[2] - median_color_skin[2]) ** 2)
+
+
+            # Schwellwert für den Farbunterschied
+            threshold = 60
+
+            if hair_diff < threshold:
+                return hair_hex, "Probably a bald spot or a bald head"
+            else:
+                return hair_hex, "Possible not bald or balding"
 
 
 class EyeColorDetector(FaceDetector):
@@ -265,33 +291,7 @@ class EyeColorDetector(FaceDetector):
         array1 = tuple(array1)
 
         color_name = self.find_color(array1)
-        # print(color_name)
 
-        # detected_color = np.zeros((100, 300, 3), dtype=np.uint8)
-        # detected_color[:] = array1[::1]
-        #
-        # # cv2.putText(detected_color, color_name, (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2,
-        # # cv2.LINE_AA)
-        #
-        # roi_top = (row // 2)
-        # roi_bottom = (row // 2) + 1
-        # roi_left = (col // 3) + 2
-        # roi_right = (col // 3) + 9
-        # new_rgb = (0, 0, 255)
-        # roi_eye[roi_top:roi_bottom, roi_left:roi_right] = new_rgb
-        #
-        # # cv2.imshow("Detected Color", detected_color)
-        # # cv2.imshow("frame", roi_eye)
-        # # cv2.waitKey(0)
-        # # cv2.destroyAllWindows()
-        # roi_eye_rgb = cv2.cvtColor(roi_eye, cv2.COLOR_BGR2RGB)
-        # detected_color_rgb = cv2.cvtColor(detected_color, cv2.COLOR_BGR2RGB)
-        # plt.imshow(detected_color_rgb)
-        # plt.title("Detected Color")
-        # plt.show()
-        # plt.imshow(roi_eye_rgb)
-        # plt.title("Eye Detected")
-        # plt.show()
         return color_name
 
     def detect_face(self, image):
@@ -328,21 +328,21 @@ class ConvNet(nn.Module):
             nn.ReLU(),
             nn.Linear(256, 7)
         )
-        
+
     def forward(self, x):
         x = self.model(x)
         age = self.fc_age(x)
         gender = self.fc_gender(x)
         race = self.fc_race(x)
         return age, gender, race
-    
+
+
 class AgeGenderRaceDetector():
-    
+
     def __init__(self, image_path):
         self.image_path = image_path
-    
-    def predict(self):
 
+    def predict(self):
         image_path = self.image_path
         # Define the same transformations as used during training
         transform = transforms.Compose([
@@ -356,13 +356,15 @@ class AgeGenderRaceDetector():
         # image_path = 'test.jpg'  # Replace with your image path
         # image = Image.open(image_path)
         image = Image.open(self.image_path)
-        
+
         # Apply the transformations
         image = transform(image)
         image = image.unsqueeze(0)  # Add batch dimension
 
         model = ConvNet()
-        model.load_state_dict(torch.load(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'Utils', 'fairface_model_greyscale.pth')), map_location=torch.device('cpu')))
+        model.load_state_dict(torch.load(
+            os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'Utils', 'fairface_model_greyscale.pth')),
+            map_location=torch.device('cpu')))
         # model.cpu()
         model.eval()
 
@@ -415,15 +417,14 @@ class AgeGenderRaceDetector():
         # plt.title(f'Predicted Age: {pred_age_label}, Gender: {pred_gender_label}, Race: {pred_race_label}')
         # plt.show()
 
-        return  pred_age_label, pred_gender_label, pred_race_label
-    
+        return pred_age_label, pred_gender_label, pred_race_label
+
 
 class BeardDetector:
 
     def init(self, predictor_path):
         self.detector = dlib.get_frontal_face_detector()
         self.predictor = dlib.shape_predictor(predictor_path)
-
 
 # Alter Code
 
