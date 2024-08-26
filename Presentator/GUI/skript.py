@@ -20,7 +20,7 @@ predictor_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '
 async def eye_color() -> str:
     eye_color_detector = EyeColorDetector(predictor_path)
     result_eye_color_hex, eye_color_name = eye_color_detector.detect_eye_color(image_path)
-    return result_eye_color_hex
+    return result_eye_color_hex, eye_color_name
 
 
 async def glasses() -> str:
@@ -35,8 +35,8 @@ async def facial_hair() -> str:
 
 async def hair_color():
     hair_type_detector = HairColorDetector(predictor_path)
-    result_hair_color, result_hair_typ = hair_type_detector.find_hair_color(image_path)
-    return result_hair_color, result_hair_typ
+    result_hair_hex, hair_color_name, result_hair_typ = hair_type_detector.find_hair_color(image_path)
+    return result_hair_hex, hair_color_name, result_hair_typ
     # return "None"
 
 

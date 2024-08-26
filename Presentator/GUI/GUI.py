@@ -93,22 +93,23 @@ async def image_processing():
     await asyncio.sleep(0.1)  # Async sleep anstelle von blockierendem sleep
 
     # Dummy Funktionen für Bildverarbeitung
-    hair_color_and_typ = await hair_color()
+    hair_hex, hair_color_name, hair_typ = await hair_color()
 
-    eye_color_result = await eye_color()
+    eye_color_hex, eye_color_name = await eye_color()
     glasses_result = await glasses()
 
     # Labels aktualisieren, um den neuen Wert anzuzeigen
-    hair_typ_label.set_text(hair_color_and_typ[1])
+    hair_typ_label.set_text(hair_typ)
     glasses_label.set_text(glasses_result)
-    hair_color_label.set_text(hair_color_and_typ[0])
-    eye_color_label.set_text(eye_color_result)
+    hair_color_label.set_text(hair_color_name)
+    eye_color_label.set_text(eye_color_name)
 
     # Hintergrundfarben der Labels aktualisieren
-    output_1_color.style(f"background-color: {eye_color_result} !important;")
-
+    output_1_color.style(f"background-color: {eye_color_hex} !important;")
+    output_1_color.set_text(eye_color_hex.upper())
     # Hair Color
-    output_3_color.style(f"background-color: {hair_color_and_typ[0]} !important;")
+    output_3_color.style(f"background-color: {hair_hex} !important;")
+    output_3_color.set_text(hair_hex.upper())
 
 
 async def neural_networks():

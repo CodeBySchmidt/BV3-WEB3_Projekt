@@ -93,9 +93,9 @@ class ColorFinder:
         min_colours = {}
         for name, key in webcolors.CSS3_HEX_TO_NAMES.items():
             r_c, g_c, b_c = webcolors.hex_to_rgb(name)
-            bd = (b_c - requested_colour[0]) ** 2
+            rd = (r_c - requested_colour[0]) ** 2
             gd = (g_c - requested_colour[1]) ** 2
-            rd = (r_c - requested_colour[2]) ** 2
+            bd = (b_c - requested_colour[2]) ** 2
             min_colours[(rd + gd + bd)] = key
         closest_name = min_colours[min(min_colours.keys())]
         return closest_name
@@ -185,9 +185,6 @@ class HairColorDetector(FaceDetector):
             median_color_hair = calculate_median_color(upper_part)
             median_color_skin = calculate_median_color(img)
 
-            hair_hex = rgb_to_hex(median_color_hair)
-            skin_hex = rgb_to_hex(median_color_skin)
-
             # Vergleich der Medianfarben
             hair_diff = np.sqrt((median_color_hair[0] - median_color_skin[0]) ** 2 +
                                 (median_color_hair[1] - median_color_skin[1]) ** 2 +
@@ -196,10 +193,14 @@ class HairColorDetector(FaceDetector):
             # Schwellwert für den Farbunterschied
             threshold = 60
 
+            hair_hex = rgb_to_hex(median_color_hair)
+            color_finder = ColorFinder()
+            color_name = color_finder.find_color(median_color_skin)
+
             if hair_diff < threshold:
-                return hair_hex, "Probably a bald spot or a bald head"
+                return hair_hex, color_name, "Probably a bald spot or a bald head"
             else:
-                return hair_hex, "Possible not bald or balding"
+                return hair_hex, color_name, "Possible not bald or balding"
 
 
 class EyeColorDetector(FaceDetector):
