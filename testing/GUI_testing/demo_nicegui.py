@@ -3,6 +3,7 @@ import base64
 import signal
 import time
 
+
 import cv2
 import numpy as np
 from fastapi import Response
@@ -89,61 +90,95 @@ draw_landmarks_state = False
 state = True
 
 
+async def all_tasks():
+    await asyncio.sleep(0.1)
+
+    await neural_networks()
+    await image_processing()
+
+
 async def image_processing():
     await asyncio.sleep(0.1)  # Async sleep anstelle von blockierendem sleep
 
-    # Dummy Funktionen für Bildverarbeitung
-    hair_color_and_typ = await hair_color()
+    # Haarfarbe und Typ
+    print("Creating task for hair_color function")
+    try:
+        hair_color_task = asyncio.create_task(hair_color())
+        hair_color_and_typ = await hair_color_task
+        print(f"hair_color_and_typ result: {hair_color_and_typ}")
+        print("_________________________________________________________________________________________________")
+        print()
+    except Exception as e:
+        print(f"Error in hair_color function: {e}")
 
-    eye_color_result = await eye_color()
-    glasses_result = await glasses()
+    # Augenfarbe
+    print("Creating task for eye_color function")
+    try:
+        eye_color_task = asyncio.create_task(eye_color())
+        eye_color_result = await eye_color_task
+        print(f"eye_color result: {eye_color_result}")
+        print("_________________________________________________________________________________________________")
+        print()
+    except Exception as e:
+        print(f"Error in eye_color function: {e}")
 
-    # Labels aktualisieren, um den neuen Wert anzuzeigen
+    # Brille
+    print("Creating task for glasses function")
+    try:
+        glasses_task = asyncio.create_task(glasses())
+        glasses_result = await glasses_task
+        print(f"glasses result: {glasses_result}")
+        print("_________________________________________________________________________________________________")
+        print()
+    except Exception as e:
+        print(f"Error in glasses function: {e}")
+
     hair_typ_label.set_text(hair_color_and_typ[1])
-    glasses_label.set_text(glasses_result)
     hair_color_label.set_text(hair_color_and_typ[0])
-    eye_color_label.set_text(eye_color_result)
-
-    # Hintergrundfarben der Labels aktualisieren
-    output_1_color.style(f"background-color: {eye_color_result} !important;")
-
-    # Hair Color
     output_3_color.style(f"background-color: {hair_color_and_typ[0]} !important;")
+
+    eye_color_label.set_text(eye_color_result)
+    glasses_label.set_text(glasses_result)
 
 
 async def neural_networks():
     await asyncio.sleep(0.1)
 
-    facial_hair_result = await facial_hair()
-    race_result = await race()
-    age_gender_race_result = await gender_age_race()
+    # FACIAL HAIR TASK
+    try:
+        print("Starting facial_hair function")
+        facial_hair_task = asyncio.create_task(facial_hair())
+        facial_hair_result = await facial_hair_task
+        print(f"facial_hair result: {facial_hair_result}")
+        print("_________________________________________________________________________________________________")
+        print()
+    except Exception as e:
+        print(f"Error in neural_networks - facial_hair: {e}")
 
-    # Labels aktualisieren, um den neuen Wert anzuzeigen
+    # AGE GENDER RACE TASK
+    try:
+        print("Starting age_gender_race function")
+        age_gender_race_task = asyncio.create_task(gender_age_race())
+        age_gender_race_result = await age_gender_race_task
+        print(f"age_gender race result: {age_gender_race_result}")
+        print("_________________________________________________________________________________________________")
+        print()
+    except Exception as e:
+        print(f"Error in neural_networks - age_gender_race: {e}")
+
     facial_hair_label.set_text(facial_hair_result)
-    race_label.set_text(race_result)
     age_label.set_text(age_gender_race_result[0])
     gender_label.set_text(age_gender_race_result[1])
     race_label.set_text(age_gender_race_result[2])
 
 
-# Methode, die aufgerufen wird, wenn die Checkbox geändert wird
-def on_checkbox_change(value):
-    global draw_landmarks_state
-
-    if value:
-        draw_landmarks_state = not draw_landmarks_state
-
-
 async def button_clicked():
     global state
 
-    # Step 1: Capture the current frame
     ret, frame = video_capture.read()
     if ret:
-        # Step 2: Save the frame as a screenshot
-        screenshot_path = "current_frame.jpg"  # You can change this path to wherever you want to save the screenshot
+        screenshot_path = "current_frame.jpg"
         cv2.imwrite(screenshot_path, frame)
-        print(f"Screenshot saved to {screenshot_path}")
     else:
         print("Failed to capture frame")
 
@@ -153,7 +188,15 @@ async def button_clicked():
     await asyncio.create_task(image_processing())
     await asyncio.create_task(neural_networks())
 
+
     video_image.set_visibility(True)
+
+
+def on_checkbox_change(value):
+    global draw_landmarks_state
+
+    if value:
+        draw_landmarks_state = not draw_landmarks_state
 
 
 def get_color_name_or_hex(input_value):
@@ -231,19 +274,6 @@ ui.add_css('''
 # ________________________________________________________________________________________________________
 #
 
-
-# @ui.page('/other_page')
-# def other_page():
-#     ui.label('Welcome to the other side')
-#
-#
-# @ui.page('/dark_page', dark=True)
-# def dark_page():
-#     ui.label('Welcome to the dark side')
-#
-#
-# ui.link('Visit other page', other_page)
-# ui.link('Visit dark page', dark_page)
 
 ui.query("body").classes("primary")
 

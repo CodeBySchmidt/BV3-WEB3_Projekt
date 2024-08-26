@@ -3,14 +3,13 @@ import numpy as np
 import dlib
 import cv2
 import webcolors
-from imutils import face_utils
 import torch
-from torchvision import transforms
-from PIL import Image
-import matplotlib.pyplot as plt
 import torch.nn as nn
+
+from torchvision import transforms
 from torchvision import models
-from torchvision.models.resnet import ResNet
+from PIL import Image
+from imutils import face_utils
 
 
 class FaceDetector:
@@ -119,15 +118,27 @@ def calculate_median_color(image):
         return "No Face detected", "No Face detected"
 
     if len(image.shape) == 3:
-        median_b = int(np.median(image[:, :, 0].flatten()))
-        median_g = int(np.median(image[:, :, 1].flatten()))
-        median_r = int(np.median(image[:, :, 2].flatten()))
-        hex_color = '#{:02x}{:02x}{:02x}'.format(median_r, median_g, median_b)
-        return (median_b, median_g, median_r), hex_color
+        median_r = np.median(image[:, :, 0].flatten())
+        median_g = np.median(image[:, :, 1].flatten())
+        median_b = np.median(image[:, :, 2].flatten())
+        median_color = (median_r, median_g, median_b)
+        return median_color
     else:
-        median_value = int(np.median(image.flatten()))
-        hex_color = '#{:02x}{:02x}{:02x}'.format(median_value, median_value, median_value)
-        return (median_value, median_value, median_value), hex_color
+        median_value = np.median(image.flatten())
+        return median_value
+
+
+def rgb_to_hex(rgb):
+    """
+    Convert RGB color to hexadecimal representation.
+
+    Args:
+        rgb (tuple): A tuple containing the RGB values, e.g., (255, 0, 0).
+
+    Returns:
+        str: The hexadecimal color code, e.g., '#ff0000'.
+    """
+    return '#{:02x}{:02x}{:02x}'.format(int(rgb[0]), int(rgb[1]), int(rgb[2]))
 
 
 class HairColorDetector(FaceDetector):
@@ -143,15 +154,22 @@ class HairColorDetector(FaceDetector):
         else:
             return None
 
-    def crop_face(self, image):
-        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-        rects = self.detector(gray, 1)
+    def find_hair_color(self, image_path):
+        if not os.path.isfile(image_path):
+            return "Image does not exist", "Image does not exist"
 
-        if rects:
-            rect = rects[0]
-            landmarks = self.predictor(gray, rect)
+        image = dlib.load_rgb_image(image_path)
+        faces = self.detect_face(image)
+
+        if faces is None:
+            return "No face detected", "No face detected"
+
+        else:
+            gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+            face = faces[0]
+            landmarks = self.predictor(gray, face)
             face_utils.shape_to_np(landmarks)
-            (x, y, w, h) = face_utils.rect_to_bb(rect)
+            (x, y, w, h) = face_utils.rect_to_bb(face)
 
             # Berechnung der Bounding Box
             x1 = max(0, x)
@@ -161,38 +179,19 @@ class HairColorDetector(FaceDetector):
 
             cropped_image = image[y1:y2, x1:x2]
             img = image[y:y + h, x:x + w]
-
             # Oberer Teil des Gesichts
             upper_part = cropped_image[:int(cropped_image.shape[0] * 0.25), :]
 
-            return upper_part, img
-        else:
-            return None, None
+            median_color_hair = calculate_median_color(upper_part)
+            median_color_skin = calculate_median_color(img)
 
-    def find_hair_color(self, image_path):
-        if not os.path.isfile(image_path):
-            return "Image does not exist", "Image does not exist"
-
-        image = dlib.load_rgb_image(image_path)
-
-        detected_face = self.detect_face(image)
-
-        if detected_face is None:
-            return "No face detected", "No face detected"
-        else:
-            upper_part, img = self.crop_face(image)
-
-            median_color_hair, hair_hex = calculate_median_color(upper_part)
-            median_color_skin, skin_hex = calculate_median_color(img)
-
-            # color_finder = ColorFinder()
-            # color_name = color_finder.find_color(median_color_hair)
+            hair_hex = rgb_to_hex(median_color_hair)
+            skin_hex = rgb_to_hex(median_color_skin)
 
             # Vergleich der Medianfarben
             hair_diff = np.sqrt((median_color_hair[0] - median_color_skin[0]) ** 2 +
                                 (median_color_hair[1] - median_color_skin[1]) ** 2 +
                                 (median_color_hair[2] - median_color_skin[2]) ** 2)
-
 
             # Schwellwert für den Farbunterschied
             threshold = 60
@@ -223,7 +222,9 @@ class EyeColorDetector(FaceDetector):
         if not os.path.isfile(image_path):
             return "Image does not exist"
 
-        faces, gray, img_rgb = self.detect_face(image_path)
+        image = dlib.load_rgb_image(image_path)
+
+        faces, gray, img_rgb = self.detect_face(image)
         if faces is None:
             return "No face detected"
 
@@ -288,18 +289,20 @@ class EyeColorDetector(FaceDetector):
         else:
             array1 = [0, 0, 0]
 
-        array1 = tuple(array1)
+        median_array1 = tuple(array1)
+        hex_color = rgb_to_hex(median_array1)
 
-        color_name = self.find_color(array1)
-
-        return color_name
+        color_finder = ColorFinder()
+        color_name = color_finder.find_color(array1)
+        print(color_name)
+        print(hex_color)
+        return hex_color, color_name
 
     def detect_face(self, image):
-        image = cv2.imread(image)
         if image is None:
             return None, None, None
 
-        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
         faces = self.detector(gray)
 
         if len(faces) > 0:
@@ -311,120 +314,113 @@ class EyeColorDetector(FaceDetector):
 class ConvNet(nn.Module):
     def __init__(self):
         super(ConvNet, self).__init__()
-        self.model = models.resnet18(weights=models.ResNet18_Weights.IMAGENET1K_V1)
-        self.model.fc = nn.Identity()
-        self.fc_age = nn.Sequential(
-            nn.Linear(512, 256),
-            nn.ReLU(),
-            nn.Linear(256, 9)
-        )
-        self.fc_gender = nn.Sequential(
-            nn.Linear(512, 256),
-            nn.ReLU(),
-            nn.Linear(256, 2)
-        )
-        self.fc_race = nn.Sequential(
-            nn.Linear(512, 256),
-            nn.ReLU(),
-            nn.Linear(256, 7)
-        )
+        self.model = models.efficientnet_b0(weights=models.EfficientNet_B0_Weights.IMAGENET1K_V1)
+        in_features = self.model.classifier[1].in_features
+        self.model.classifier = nn.Identity()
+        self.fc = nn.Linear(in_features, 18)
 
     def forward(self, x):
         x = self.model(x)
-        age = self.fc_age(x)
-        gender = self.fc_gender(x)
-        race = self.fc_race(x)
+        x = self.fc(x)
+        age, gender, race = torch.split(x, [9, 2, 7], dim=1)
         return age, gender, race
 
 
-class AgeGenderRaceDetector():
+class AgeGenderRaceDetector(FaceDetector):
 
-    def __init__(self, image_path):
-        self.image_path = image_path
+    def __init__(self, predictor_path: str):
+        super().__init__(predictor_path)
 
-    def predict(self):
-        image_path = self.image_path
-        # Define the same transformations as used during training
-        transform = transforms.Compose([
-            transforms.Grayscale(num_output_channels=3),
-            transforms.Resize((224, 224)),
-            transforms.ToTensor(),
-            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-        ])
+    def detect_face(self, image):
+        gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
+        faces = self.detector(gray)
 
-        # # Load your own image
-        # image_path = 'test.jpg'  # Replace with your image path
-        # image = Image.open(image_path)
-        image = Image.open(self.image_path)
+        if len(faces) > 0:
+            return faces
+        else:
+            return None
 
-        # Apply the transformations
-        image = transform(image)
-        image = image.unsqueeze(0)  # Add batch dimension
+    def predict(self, image_path):
 
-        model = ConvNet()
-        model.load_state_dict(torch.load(
-            os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'Utils', 'fairface_model_greyscale.pth')),
-            map_location=torch.device('cpu')))
-        # model.cpu()
-        model.eval()
+        if not os.path.isfile(image_path):
+            return "Image does not exist"
 
-        with torch.no_grad():
-            # image = image.cuda()
-            pred_age, pred_gender, pred_race = model(image)
+        image_loaded = dlib.load_rgb_image(image_path)
 
-        pred_age = torch.argmax(pred_age, dim=1).item()
-        pred_gender = torch.argmax(pred_gender, dim=1).item()
-        pred_race = torch.argmax(pred_race, dim=1).item()
+        detected_face = self.detect_face(image_loaded)
 
-        age_mapping = {
-            0: '0-2',
-            1: '3-9',
-            2: '10-19',
-            3: '20-29',
-            4: '30-39',
-            5: '40-49',
-            6: '50-59',
-            7: '60-69',
-            8: 'more than 70'
-        }
+        if detected_face is None:
+            return "No face detected", "No face detected", "No face detected"
 
-        gender_mapping = {
-            0: 'Male',
-            1: 'Female'
-        }
+        else:
+            # image_path = self.image_path
+            # Define the same transformations as used during training
+            transform = transforms.Compose([
+                transforms.Resize(256),
+                transforms.CenterCrop(224),
+                transforms.ToTensor(),
+                transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+            ])
+            # Load and transform the image
+            image = Image.open(image_path)
+            image = transform(image)
+            image = image.unsqueeze(0)  # Add batch dimension
 
-        race_mapping = {
-            0: 'White',
-            1: 'Black',
-            2: 'Latino_Hispanic',
-            3: 'East Asian',
-            4: 'Southeast Asian',
-            5: 'Indian',
-            6: 'Middle Eastern'
-        }
+            # Load the model
+            model = ConvNet()
+            model.load_state_dict(torch.load(
+                os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'Utils', 'best_fairface_model2.pth')),
+                map_location=torch.device('cpu')))
+            model.eval()
 
-        # Convert predictions to labels
-        pred_age_label = age_mapping[pred_age]
-        pred_gender_label = gender_mapping[pred_gender]
-        pred_race_label = race_mapping[pred_race]
+            # Make predictions
+            with torch.no_grad():
+                pred_age, pred_gender, pred_race = model(image)
 
-        # print(f'Predicted Age: {pred_age_label}')
-        # print(f'Predicted Gender: {pred_gender_label}')
-        # print(f'Predicted Race: {pred_race_label}')
+            # Get the predicted labels
+            pred_age = torch.argmax(pred_age, dim=1).item()
+            pred_gender = torch.argmax(pred_gender, dim=1).item()
+            pred_race = torch.argmax(pred_race, dim=1).item()
 
-        # # Optionally, display the image
-        # plt.imshow(Image.open(image_path))
-        # plt.title(f'Predicted Age: {pred_age_label}, Gender: {pred_gender_label}, Race: {pred_race_label}')
-        # plt.show()
+            # Mapping dictionaries
+            age_mapping = {
+                0: '0-2',
+                1: '3-9',
+                2: '10-19',
+                3: '20-29',
+                4: '30-39',
+                5: '40-49',
+                6: '50-59',
+                7: '60-69',
+                8: 'more than 70'
+            }
 
-        return pred_age_label, pred_gender_label, pred_race_label
+            gender_mapping = {
+                0: 'Male',
+                1: 'Female'
+            }
+
+            race_mapping = {
+                0: 'White',
+                1: 'Black',
+                2: 'Latino_Hispanic',
+                3: 'East Asian',
+                4: 'Southeast Asian',
+                5: 'Indian',
+                6: 'Middle Eastern'
+            }
+
+            # Convert predictions to labels
+            pred_age_label = age_mapping[pred_age]
+            pred_gender_label = gender_mapping[pred_gender]
+            pred_race_label = race_mapping[pred_race]
+            return pred_age_label, pred_gender_label, pred_race_label
 
 
-class BeardDetector:
+class BeardDetector(FaceDetector):
+    def __init__(self, predictor_path: str):
+        super().__init__(predictor_path)
 
-    def init(self, predictor_path):
-        self.detector = dlib.get_frontal_face_detector()
-        self.predictor = dlib.shape_predictor(predictor_path)
 
 # Alter Code
 

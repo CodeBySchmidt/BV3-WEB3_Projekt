@@ -11,6 +11,9 @@ from torchvision import models
 from PIL import Image
 from imutils import face_utils
 
+from typing import Tuple, List, Dict, Union
+from onnxruntime import InferenceSession
+
 
 class FaceDetector:
     def __init__(self, predictor_path: str):
@@ -63,20 +66,6 @@ class GlassesDetector(FaceDetector):
             else:
                 return "No"
 
-    # def display_results(self, image_path):
-    #     if not os.path.isfile(image_path):
-    #         return "Image does not exist"
-    #
-    #     img = dlib.load_rgb_image(image_path)
-    #     glasses = self.detect_glasses(img)
-    #
-    #     if glasses == "No face detected":
-    #         return "No face detected"
-    #     elif glasses == True:
-    #         return "Yes"
-    #     else:
-    #         return "No"
-
     def detect_face(self, image):
 
         gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
@@ -118,14 +107,15 @@ def calculate_median_color(image):
         return "No Face detected", "No Face detected"
 
     if len(image.shape) == 3:
-        median_b = int(np.median(image[:, :, 0].flatten()))
-        median_g = int(np.median(image[:, :, 1].flatten()))
-        median_r = int(np.median(image[:, :, 2].flatten()))
-        hex_color = '#{:02x}{:02x}{:02x}'.format(median_r, median_g, median_b)
-        return (median_b, median_g, median_r), hex_color
+        median_r = np.median(image[:, :, 0].flatten())
+        median_g = np.median(image[:, :, 1].flatten())
+        median_b = np.median(image[:, :, 2].flatten())
+        median_color = (median_r, median_g, median_b)
+        hex_color = '#{:02x}{:02x}{:02x}'.format(int(median_r), int(median_g), int(median_b))
+        return median_color, hex_color
     else:
-        median_value = int(np.median(image.flatten()))
-        hex_color = '#{:02x}{:02x}{:02x}'.format(median_value, median_value, median_value)
+        median_value = np.median(image.flatten())
+        hex_color = '#{:02x}{:02x}{:02x}'.format(int(median_value), int(median_value), int(median_value))
         return (median_value, median_value, median_value), hex_color
 
 
@@ -298,29 +288,15 @@ class EyeColorDetector(FaceDetector):
 class ConvNet(nn.Module):
     def __init__(self):
         super(ConvNet, self).__init__()
-        self.model = models.resnet18(weights=models.ResNet18_Weights.IMAGENET1K_V1)
-        self.model.fc = nn.Identity()
-        self.fc_age = nn.Sequential(
-            nn.Linear(512, 256),
-            nn.ReLU(),
-            nn.Linear(256, 9)
-        )
-        self.fc_gender = nn.Sequential(
-            nn.Linear(512, 256),
-            nn.ReLU(),
-            nn.Linear(256, 2)
-        )
-        self.fc_race = nn.Sequential(
-            nn.Linear(512, 256),
-            nn.ReLU(),
-            nn.Linear(256, 7)
-        )
+        self.model = models.efficientnet_b0(weights=models.EfficientNet_B0_Weights.IMAGENET1K_V1)
+        in_features = self.model.classifier[1].in_features
+        self.model.classifier = nn.Identity()
+        self.fc = nn.Linear(in_features, 18)
 
     def forward(self, x):
         x = self.model(x)
-        age = self.fc_age(x)
-        gender = self.fc_gender(x)
-        race = self.fc_race(x)
+        x = self.fc(x)
+        age, gender, race = torch.split(x, [9, 2, 7], dim=1)
         return age, gender, race
 
 
@@ -343,9 +319,9 @@ class AgeGenderRaceDetector(FaceDetector):
         if not os.path.isfile(image_path):
             return "Image does not exist"
 
-        image = dlib.load_rgb_image(image_path)
+        image_loaded = dlib.load_rgb_image(image_path)
 
-        detected_face = self.detect_face(image)
+        detected_face = self.detect_face(image_loaded)
 
         if detected_face is None:
             return "No face detected", "No face detected", "No face detected"
@@ -354,36 +330,33 @@ class AgeGenderRaceDetector(FaceDetector):
             # image_path = self.image_path
             # Define the same transformations as used during training
             transform = transforms.Compose([
-                transforms.Grayscale(num_output_channels=3),
-                transforms.Resize((224, 224)),
+                transforms.Resize(256),
+                transforms.CenterCrop(224),
                 transforms.ToTensor(),
                 transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
             ])
-
-            # # Load your own image
-            # image_path = 'test.jpg'  # Replace with your image path
-            # image = Image.open(image_path)
+            # Load and transform the image
             image = Image.open(image_path)
-
-            # Apply the transformations
             image = transform(image)
             image = image.unsqueeze(0)  # Add batch dimension
 
+            # Load the model
             model = ConvNet()
             model.load_state_dict(torch.load(
-                os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'Utils', 'fairface_model_greyscale.pth')),
+                os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'Utils', 'best_fairface_model2.pth')),
                 map_location=torch.device('cpu')))
-            # model.cpu()
             model.eval()
 
+            # Make predictions
             with torch.no_grad():
-                # image = image.cuda()
                 pred_age, pred_gender, pred_race = model(image)
 
+            # Get the predicted labels
             pred_age = torch.argmax(pred_age, dim=1).item()
             pred_gender = torch.argmax(pred_gender, dim=1).item()
             pred_race = torch.argmax(pred_race, dim=1).item()
 
+            # Mapping dictionaries
             age_mapping = {
                 0: '0-2',
                 1: '3-9',
@@ -415,22 +388,171 @@ class AgeGenderRaceDetector(FaceDetector):
             pred_age_label = age_mapping[pred_age]
             pred_gender_label = gender_mapping[pred_gender]
             pred_race_label = race_mapping[pred_race]
-
-            # print(f'Predicted Age: {pred_age_label}')
-            # print(f'Predicted Gender: {pred_gender_label}')
-            # print(f'Predicted Race: {pred_race_label}')
-
-            # # Optionally, display the image
-            # plt.imshow(Image.open(image_path))
-            # plt.title(f'Predicted Age: {pred_age_label}, Gender: {pred_gender_label}, Race: {pred_race_label}')
-            # plt.show()
-
             return pred_age_label, pred_gender_label, pred_race_label
 
 
+# ORIGINAL GIT CODE
+class OnnxModelLoader:
+    def __init__(self, onnx_path: str) -> None:
+        """
+        Class for loading ONNX models to inference on CPU. CPU inference is very effective using onnxruntime.
+
+        :param onnx_path: path to ONNX model file (*.onnx file).
+        """
+        self.sess = InferenceSession(onnx_path, providers=['CPUExecutionProvider'])
+
+        self.input_name = [x.name for x in self.sess.get_inputs()][0]
+        self.output_names = [x.name for x in self.sess.get_outputs()]
+
+    def inference(self, inputs: np.ndarray) -> List[np.ndarray]:
+        """
+        Run inference.
+
+        :param inputs: list of arguments, order must match names in input_names.
+        :return: list of outputs.
+        """
+        return self.sess.run(self.output_names, input_feed={self.input_name: inputs})
+
+
+# ORIGINAL GIT CODE
+class HatBeardClassifier:
+    def __init__(self, model_path: str, input_shape: Tuple[int, int, int]) -> None:
+        """
+        Class for easy using of hat/beard classifier.
+
+        :param model_path: path to trained model, converted to ONNX format.
+        :param input_shape: input shape tuple (height, width, channels).
+        """
+        self.input_shape = input_shape
+
+        self.model = OnnxModelLoader(model_path)
+        self.class_names = ('No hat, no beard', 'Hat', 'Beard', 'Hat and beard')
+
+    def inference(self, image: np.ndarray) -> Dict[str, Union[str, float]]:
+        """
+        Process image and return class name with probabilities for presence of hat and beard on the image.
+        Example of returning dict:
+        {
+            'class': 'No hat, no beard',
+            'hat': 0.05,
+            'beard': 0.01
+        }
+
+        :param image: image in BGR format (obtained using cv2) to process.
+        :return: dict with results.
+        """
+        img = preprocess_image(image, self.input_shape)
+        predictions = self.model.inference(img)
+        class_name, hat_prob, beard_prob = self._get_class(predictions)
+        return {'class': class_name, 'hat': hat_prob, 'beard': beard_prob}
+
+    def _get_class(self, predictions: List[np.ndarray]) -> Tuple[str, float, float]:
+        """
+        Get predicted class name and probabilities for each class.
+
+        :param predictions: list of two predicted arrays (hat one-hot and beard one-hot).
+        :return: class name and probabilities for each class.
+        """
+        hat_labels = predictions[0][0]
+        beard_labels = predictions[1][0]
+
+        hat_label = int(np.argmax(hat_labels))
+        beard_label = int(np.argmax(beard_labels))
+        if hat_label == 1 and beard_label == 1:
+            return self.class_names[0], hat_labels[0], beard_labels[0]
+        elif hat_label == 0 and beard_label == 1:
+            return self.class_names[1], hat_labels[0], beard_labels[0]
+        elif hat_label == 1 and beard_label == 0:
+            return self.class_names[2], hat_labels[0], beard_labels[0]
+        else:
+            return self.class_names[3], hat_labels[0], beard_labels[0]
+
+
+# ORIGINAL GIT CODE
+def preprocess_image(image: np.ndarray, input_shape: Tuple[int, int, int], bgr_to_rgb: bool = True) -> np.ndarray:
+    """
+    Copy input image and preprocess it for further inference.
+
+    :param image: image numpy array in RGB or BGR format.
+    :param input_shape: input shape tuple (height, width, channels).
+    :param bgr_to_rgb: if True, then convert image from BGR to RGB.
+    :return: image array ready for inference.
+    """
+    img = image.copy()
+    if bgr_to_rgb:
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    img = cv2.resize(img, input_shape[:2][::-1], interpolation=cv2.INTER_AREA)
+    img = np.expand_dims(img / 255.0, axis=0)
+    return np.float32(img)
+
+
+# ORIGINAL GIT CODE
+def get_coordinates(image: np.ndarray, coordinates: List[int], extend_value: float) -> Tuple[int, int, int, int]:
+    """
+    Get extended coordinates of found face for accurate hat/beard classification.
+
+    :param image: original image.
+    :param coordinates: found face coordinates in format [x, y, w, h].
+    :param extend_value: positive float < 1.
+    :return: obtained coordinates in same format.
+    """
+    x, y, w, h = coordinates
+    x = int(np.clip(x - extend_value * w, 0, image.shape[1]))
+    y = int(np.clip(y - extend_value * h, 0, image.shape[0]))
+    w = int(np.clip(w * (1 + extend_value), 0, image.shape[1]))
+    h = int(np.clip(h * (1 + extend_value), 0, image.shape[0]))
+    return x, y, w, h
+
+
+# REWORKED CODE TO FIT IN LANDMARKS
 class BeardDetector(FaceDetector):
     def __init__(self, predictor_path: str):
         super().__init__(predictor_path)
+
+    def detect_face(self, image):
+        gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
+        faces = self.detector(gray)
+
+        if len(faces) > 0:
+            return faces
+        else:
+            return None
+
+    def process_image(self, image_path: str):
+        """
+        Process a single image and return the prediction of the beard (and the Image (if drawing landmarks == True)).
+        :param image_path: Path to the image file.
+        """
+
+        if not os.path.isfile(image_path):
+            return "Image does not exist"
+
+        image_loaded = dlib.load_rgb_image(image_path)
+        detected_face = self.detect_face(image_loaded)
+
+        if detected_face is None:
+            return "No face detected", "No face detected", "No face detected"
+        else:
+            COORDINATES_EXTEND_VALUE = 0.2
+            INPUT_SHAPE = (128, 128, 3)
+            CLASSIFIER_MODEL_PATH = "../Utils/hat_beard_model.onnx"
+
+            # Debugging information.
+            if not os.path.exists(CLASSIFIER_MODEL_PATH):
+                print(f"Model file does not exist at path: {CLASSIFIER_MODEL_PATH}")
+            else:
+                print(f"Model file found at path: {CLASSIFIER_MODEL_PATH}")
+
+            classifier = HatBeardClassifier(CLASSIFIER_MODEL_PATH, INPUT_SHAPE)
+
+            image = cv2.imread(image_path)
+
+            for face in detected_face:
+                x, y, w, h = face.left(), face.top(), face.width(), face.height()
+                x, y, w, h = get_coordinates(image, (x, y, w, h), COORDINATES_EXTEND_VALUE)
+                class_result = classifier.inference(image[y:y + h, x:x + w, :])
+                beard_value = class_result['beard']
+                return beard_value
 
 
 # Alter Code
@@ -558,77 +680,3 @@ class BeardDetector(FaceDetector):
 #     except Exception as e:
 #         print(f"Fehler beim Ausführen: {e}")
 
-
-# class GenderAgeDetector(FaceDetector):
-#     def __init__(self, age_model, age_proto, gender_model, gender_proto, predictor_path: str):
-#         super().__init__(predictor_path)
-#         self.ageNet = cv2.dnn.readNet(age_model, age_proto)
-#         self.genderNet = cv2.dnn.readNet(gender_model, gender_proto)
-#         self.detector = dlib.get_frontal_face_detector()
-#         self.MODEL_MEAN_VALUES = (78.4263377603, 87.7689143744, 114.895847746)
-#         self.ageList = ['(0-2)', '(4-6)', '(8-12)', '(15-20)', '(25-32)', '(38-43)', '(48-53)', '(60-100)']
-#         self.genderList = ['Male', 'Female']
-#         self.padding = 20
-
-#     def highlight_face(self, frame):
-#         frame_opencv_dnn = frame.copy()
-#         gray = cv2.cvtColor(frame_opencv_dnn, cv2.COLOR_BGR2GRAY)
-
-#         faces = self.detector(gray)
-#         face_boxes = []
-
-#         for face in faces:
-#             x1 = face.left()
-#             y1 = face.top()
-#             x2 = face.right()
-#             y2 = face.bottom()
-#             face_boxes.append([x1, y1, x2, y2])
-
-#             shape = self.predictor(gray, face)
-
-#             for i in range(0, 68):
-#                 x = shape.part(i).x
-#                 y = shape.part(i).y
-#                 cv2.circle(frame_opencv_dnn, (x, y), 2, (0, 255, 0), -1)
-
-#         return frame_opencv_dnn, face_boxes
-
-#     def detect_age_gender(self, frame, face_box):
-#         face = frame[max(0, face_box[1] - self.padding):
-#                      min(face_box[3] + self.padding, frame.shape[0] - 1), max(0, face_box[0] - self.padding)
-#                                                                           :min(face_box[2] + self.padding,
-#                                                                                frame.shape[1] - 1)]
-
-#         blob = cv2.dnn.blobFromImage(face, 1.0, (227, 227), self.MODEL_MEAN_VALUES, swapRB=False)
-#         self.genderNet.setInput(blob)
-#         gender_preds = self.genderNet.forward()
-#         gender = self.genderList[gender_preds[0].argmax()]
-
-#         self.ageNet.setInput(blob)
-#         age_preds = self.ageNet.forward()
-#         age = self.ageList[age_preds[0].argmax()]
-
-#         return gender, age
-
-#     def process_image(self, image_path):
-#         if not os.path.isfile(image_path):
-#             return "Image does not exist", "Image does not exist"
-
-#         frame = cv2.imread(image_path)
-#         if frame is None:
-#             print(f"Error: Unable to open image file {image_path}")
-#             return
-
-#         result_img, face_boxes = self.highlight_face(frame)
-#         if not face_boxes:
-#             return "No face detected", "No face detected"
-
-#         for faceBox in face_boxes:
-#             gender, age = self.detect_age_gender(frame, faceBox)
-#             # print(f'Gender: {gender}')
-#             # print(f'Age: {age[1:-1]} years')
-
-#             # cv2.putText(result_img, f'{gender}, {age}', (faceBox[0], faceBox[1] - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.8,
-#             #             (0, 255, 255), 2, cv2.LINE_AA)
-
-#             return gender, age

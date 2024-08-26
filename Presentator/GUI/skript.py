@@ -19,8 +19,8 @@ predictor_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '
 
 async def eye_color() -> str:
     eye_color_detector = EyeColorDetector(predictor_path)
-    result_eye_color = eye_color_detector.detect_eye_color(image_path)
-    return result_eye_color
+    result_eye_color_hex, eye_color_name = eye_color_detector.detect_eye_color(image_path)
+    return result_eye_color_hex
 
 
 async def glasses() -> str:
@@ -45,10 +45,6 @@ async def gender_age_race() -> str:
     # gender_result = detector.process_image(image_path)[0]
     # age_result = detector.process_image(image_path)[1]
     # return gender_result, age_result
-    detector = AgeGenderRaceDetector(image_path)
-    age_result, gender_result, race_result = detector.predict()
+    detector = AgeGenderRaceDetector(predictor_path)
+    age_result, gender_result, race_result = detector.predict(image_path)
     return age_result, gender_result, race_result
-
-
-async def race() -> str:
-    return "European"

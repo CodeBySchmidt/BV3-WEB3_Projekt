@@ -55,7 +55,7 @@ def convert(frame: np.ndarray) -> bytes:
     return imencode_image.tobytes()
 
 
-def detect_and_draw_landmarks(frame, draw_landmarks=True):
+def detect_and_draw_landmarks(frame, draw_landmarks: bool):
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     rects = detector(gray, 0)
     for rect in rects:
@@ -64,7 +64,7 @@ def detect_and_draw_landmarks(frame, draw_landmarks=True):
 
         if draw_landmarks:
             for (x, y) in shape:
-                cv2.circle(frame, (x, y), 3, (0, 255, 0), -1)
+                cv2.circle(frame, (x, y), 1, (0, 255, 0), -1)
 
     return frame
 
@@ -76,21 +76,16 @@ async def grab_video_frame() -> Response:
     ret, frame = video_capture.read()
     if not ret:
         return placeholder
-    frame_counter += 1
 
-    if frame_counter % 50 == 0:
-        cv2.imwrite("current_frame.jpg", frame)
-        jpeg = convert(detect_and_draw_landmarks(frame))
-        # jpeg = convert(frame)
-        # print(frame_counter)
-        frame_counter = 0
-        return Response(content=jpeg, media_type='image/jpeg')
+    if draw_landmarks_state:
+        jpeg = convert(detect_and_draw_landmarks(frame, draw_landmarks=draw_landmarks_state))
+        return Response(content=jpeg, media_type="image/jpeg")
     else:
-        jpeg = convert(detect_and_draw_landmarks(frame))
-        # jpeg = convert(frame)
-        return Response(content=jpeg, media_type='image/jpeg')
+        jpeg = convert(frame)
+        return Response(content=jpeg, media_type="image/jpeg")
 
 
+draw_landmarks_state = False
 state = True
 
 
@@ -110,31 +105,45 @@ async def image_processing():
     eye_color_label.set_text(eye_color_result)
 
     # Hintergrundfarben der Labels aktualisieren
-    output_1_color.style(f"background-color: {get_color_name_or_hex(eye_color_result)} !important;")
-    output_1_color.set_text(eye_color_result)
+    output_1_color.style(f"background-color: {eye_color_result} !important;")
 
     # Hair Color
     output_3_color.style(f"background-color: {hair_color_and_typ[0]} !important;")
-    output_3_color.set_text(hair_color_and_typ[0])
 
 
 async def neural_networks():
     await asyncio.sleep(0.1)
 
     facial_hair_result = await facial_hair()
-    race_result = await race()
     age_gender_race_result = await gender_age_race()
 
     # Labels aktualisieren, um den neuen Wert anzuzeigen
     facial_hair_label.set_text(facial_hair_result)
-    race_label.set_text(race_result)
     age_label.set_text(age_gender_race_result[0])
     gender_label.set_text(age_gender_race_result[1])
     race_label.set_text(age_gender_race_result[2])
 
 
+# Methode, die aufgerufen wird, wenn die Checkbox geändert wird
+def on_checkbox_change(value):
+    global draw_landmarks_state
+
+    if value:
+        draw_landmarks_state = not draw_landmarks_state
+
+
 async def button_clicked():
     global state
+
+    # Step 1: Capture the current frame
+    ret, frame = video_capture.read()
+    if ret:
+        # Step 2: Save the frame as a screenshot
+        screenshot_path = "current_frame.jpg"  # You can change this path to wherever you want to save the screenshot
+        cv2.imwrite(screenshot_path, frame)
+        print(f"Screenshot saved to {screenshot_path}")
+    else:
+        print("Failed to capture frame")
 
     if state:
         video_image.set_visibility(False)
@@ -221,6 +230,19 @@ ui.add_css('''
 #
 
 
+# @ui.page('/other_page')
+# def other_page():
+#     ui.label('Welcome to the other side')
+#
+#
+# @ui.page('/dark_page', dark=True)
+# def dark_page():
+#     ui.label('Welcome to the dark side')
+#
+#
+# ui.link('Visit other page', other_page)
+# ui.link('Visit dark page', dark_page)
+
 ui.query("body").classes("primary")
 
 # Erstelle das Grid mit den farbigen Labels
@@ -243,7 +265,7 @@ with ui.grid(rows=6, columns=16).classes("gap-5 w-full p-5").style("height: 95vh
                 # output_3_color rechts
                 with ui.element("output_3_color").classes(
                         "col-start-2 col-span-1 row-start-1 row-span-1 flex justify-center items-center"):
-                    output_3_color = ui.label("None").classes(
+                    output_3_color = ui.label().classes(
                         "bg-white text-black p-5 rounded flex justify-center items-center inset-shadow").style(
                         "height: 80%; width: 80%")
 
@@ -268,7 +290,7 @@ with ui.grid(rows=6, columns=16).classes("gap-5 w-full p-5").style("height: 95vh
                 # output_1_color rechts
                 with ui.element("output_1_color").classes(
                         "col-start-2 col-span-1 row-start-1 row-span-1 flex justify-center items-center"):
-                    output_1_color = ui.label("None").classes(
+                    output_1_color = ui.label().classes(
                         "text-black bg-white p-5 rounded flex justify-center items-center inset-shadow").style(
                         "height: 80%; width: 80%;")
 
@@ -294,32 +316,35 @@ with ui.grid(rows=6, columns=16).classes("gap-5 w-full p-5").style("height: 95vh
         with ui.grid(rows=1, columns=3).classes("h-full w-full gap-5 pb-4"):
             # Erste Spalte -> Age
             with ui.element("container_output_age").classes(
-                    "rounded col-span-4 row-start-1 grid grid-cols-2 gap-2 secondary overflow-hidden py-6 drop-shadow-[10px_12px_3px_rgba(0,0,0,0.25)]"):
+                    "rounded col-span-1 row-start-1 col-start-1 grid gap-2 secondary overflow-hidden py-6 drop-shadow-[10px_12px_3px_rgba(0,0,0,0.25)]"):
                 # output_age
                 with ui.element("output_age").classes(
-                        "col-start-1 col-end-2 row-span-1 flex flex-col justify-center items-start pl-10"):
+                        "flex flex-col justify-center items-start pl-10"):
                     age_label = ui.label("None").classes("text-3xl").style("color: white;")
                     ui.label("Age").classes("text-lg").style("color: white;")
 
             # Zweite Spalte -> Race
             with ui.element("container_output_race").classes(
-                    "rounded col-span-4 row-start-1 grid grid-cols-2 gap-2 secondary overflow-hidden py-6 drop-shadow-[10px_12px_3px_rgba(0,0,0,0.25)]"):
+                    "rounded col-span-1 row-start-1 col-start-2 grid gap-2 secondary overflow-hidden py-6 drop-shadow-[10px_12px_3px_rgba(0,0,0,0.25)]"):
                 # output_race
                 with ui.element("output_race").classes(
-                        "col-start-1 col-span-1 row-start-1 row-span-1 flex flex-col justify-center items-start pl-10"):
+                        "flex flex-col justify-center items-start pl-10"):
                     race_label = ui.label("None").classes("text-3xl").style("color: white;")
                     ui.label("Race").classes("text-lg").style("color: white;")
 
             # Dritte Spalte -> Gender
             with ui.element("container_output_gender").classes(
-                    "rounded col-span-4 row-start-1 grid grid-cols-2 gap-2 secondary overflow-hidden py-6 drop-shadow-[10px_12px_3px_rgba(0,0,0,0.25)]"):
+                    "rounded col-span-1 row-start-1 col-start-3 grid gap-2 secondary overflow-hidden py-6 drop-shadow-[10px_12px_3px_rgba(0,0,0,0.25)]"):
                 # output_gender
                 with ui.element("output_gender").classes(
-                        "col-start-1 col-span-1 row-start-1 row-span-1 flex flex-col justify-center items-start pl-10"):
+                        "flex flex-col justify-center items-start pl-10"):
                     gender_label = ui.label("None").classes("text-3xl").style("color: white;")
                     ui.label("Gender").classes("text-lg").style("color: white;")
 
-    with ui.element("container_button").classes("col-span-4 row-start-6 flex justify-end items-center overflow-hidden"):
+    with ui.element("container_button").classes("col-span-4 row-start-6 flex overflow-hidden"):
+
+        checkbox = ui.checkbox("Draw Landmarks").on_value_change(on_checkbox_change).classes("p-2 text-xl").style("color: white;")
+
         ui.button("Calculate", on_click=button_clicked).classes("btn btn-blue")
 
 # A timer constantly updates the source of the image.

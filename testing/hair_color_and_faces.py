@@ -2,13 +2,12 @@ import cv2
 import numpy as np
 from imutils import face_utils
 import dlib
-
+import matplotlib.pyplot as plt
 
 class FaceDetector:
     def __init__(self, predictor_path: str):
         self.detector = dlib.get_frontal_face_detector()
         self.predictor = dlib.shape_predictor(predictor_path)
-
 
 class HairColorDetector(FaceDetector):
     def __init__(self, predictor_path: str):
@@ -48,22 +47,21 @@ class HairColorDetector(FaceDetector):
 
         # Haarfarbe
         if len(upper_part.shape) == 3:
-            median_b = np.median(upper_part[:, :, 0].flatten())
-            median_g = np.median(upper_part[:, :, 1].flatten())
-            median_r = np.median(upper_part[:, :, 2].flatten())
-            median_color_hair = (median_b, median_g, median_r)
-
+            median_b_h = np.median(upper_part[:, :, 0].flatten())
+            median_g_h = np.median(upper_part[:, :, 1].flatten())
+            median_r_h = np.median(upper_part[:, :, 2].flatten())
+            median_color_hair = (median_r_h, median_g_h, median_b_h)
+            hex_color_hair = '#{:02x}{:02x}{:02x}'.format(int(median_r_h), int(median_g_h), int(median_b_h))
         else:
             median_value = np.median(upper_part.flatten())
             median_color_hair = (median_value, median_value, median_value)
 
         # Hautfarbe
         if len(img.shape) == 3:
-            median_b = np.median(img[:, :, 0].flatten())
-            median_g = np.median(img[:, :, 1].flatten())
-            median_r = np.median(img[:, :, 2].flatten())
+            median_b = int(np.median(image[:, :, 0].flatten()))
+            median_g = int(np.median(image[:, :, 1].flatten()))
+            median_r = int(np.median(image[:, :, 2].flatten()))
             median_color_skin = (median_b, median_g, median_r)
-
         else:
             median_value = np.median(img.flatten())
             median_color_skin = (median_value, median_value, median_value)
@@ -77,14 +75,37 @@ class HairColorDetector(FaceDetector):
         # Schwellwert für den Farbunterschied
         threshold = 60
 
+        # Ein neues Bild mit dem Median-Farbwert erstellen
+        hair_color_median = np.full((300, 300, 3), median_color_hair, dtype=np.uint8)
+
+        # Ein neues Bild mit dem Mittelwert-Farbwert erstellen
+        # hair_color_hex = np.full((300, 300, 3), hex_color_hair, dtype=np.uint8)
+
+        print(median_color_hair)
+        print(hex_color_hair)
+
+        # Plotten der Bilder
+        plt.figure(figsize=(10, 5))
+
+        plt.subplot(1, 2, 1)
+        plt.title("Median")
+        plt.imshow(hair_color_median)
+        plt.axis('off')
+
+        plt.subplot(1, 2, 2)
+        plt.title('Hex')
+        plt.figtext(0.5, 0.01, f'Hair Color Hex: {hex_color_hair}', ha='center', fontsize=12, color=hex_color_hair, bbox=dict(facecolor='white', alpha=0.7))
+        plt.axis('off')
+
+        plt.show()
+
         if hair_diff < threshold:
             return "Glatze"
         else:
             return "Keine Glatze"
 
-
 # Nutzung der Klasse
-image_path = "Utils/img/1.jpg"
+image_path = "Utils/img/2.jpg"
 landmark_detector_path = "Utils/shape_predictor_68_face_landmarks.dat"
 processor = HairColorDetector(landmark_detector_path)
 result = processor.find_hair_color(image_path)

@@ -1,4 +1,4 @@
-from video_landmarks import FaceDetector, EyeColorDetector, GlassesDetector, AgeGenderRaceDetector, HairColorDetector
+from video_landmarks import EyeColorDetector, GlassesDetector, AgeGenderRaceDetector, HairColorDetector, BeardDetector
 import os
 
 
@@ -10,33 +10,45 @@ gender_proto = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'Ut
 gender_model = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'Utils', 'gender_net.caffemodel'))
 predictor_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'Utils', 'shape_predictor_68_face_landmarks.dat'))
 
-# Wird eventuell gar nicht benötigt
-# def get_screenshot():
-#     detector = FaceLandmarkDetector(predictor_path)
-#     image = detector.take_screenshot("screenshot.jpg")
-#     return image
-
 
 async def eye_color() -> str:
-    eye_color_detector = EyeColorDetector(predictor_path)
-    result_eye_color = eye_color_detector.detect_eye_color(image_path)
-    return result_eye_color
+    try:
+        eye_color_detector = EyeColorDetector(predictor_path)
+        # result_eye_color = eye_color_detector.detect_eye_color(image_path)
+        result_eye_color = "EyeColorDetector"
+        return result_eye_color
+    except Exception as e:
+        print(f"Error in eye_color function: {e}")
 
 
 async def glasses() -> str:
-    glasses_detector = GlassesDetector(predictor_path)
-    result_glasses = glasses_detector.detect_glasses(image_path)
-    return result_glasses
+    try:
+        glasses_detector = GlassesDetector(predictor_path)
+        result_glasses = glasses_detector.detect_glasses(image_path)
+        # result_glasses = "GlassesDetector"
+        return result_glasses
+
+    except Exception as e:
+        print(f"Error in glasses function: {e}")
 
 
 async def facial_hair() -> str:
-    return "None"
+    try:
+        beard_detector = BeardDetector(predictor_path)
+        result_beard = beard_detector.process_image(image_path)
+        return result_beard
+    except Exception as e:
+        print(f"Error in facial_hair function: {e}")
+    # return "None"
 
 
 async def hair_color():
-    hair_type_detector = HairColorDetector(predictor_path)
-    result_hair_color, result_hair_typ = hair_type_detector.find_hair_color(image_path)
-    return result_hair_color, result_hair_typ
+    try:
+        hair_type_detector = HairColorDetector(predictor_path)
+        result_hair_color, result_hair_typ = hair_type_detector.find_hair_color(image_path)
+        return result_hair_color, result_hair_typ
+    except Exception as e:
+        print(f"Error in hair_color function: {e}")
     # return "None"
 
 
@@ -45,10 +57,9 @@ async def gender_age_race() -> str:
     # gender_result = detector.process_image(image_path)[0]
     # age_result = detector.process_image(image_path)[1]
     # return gender_result, age_result
-    detector = AgeGenderRaceDetector(predictor_path)
-    age_result, gender_result, race_result = detector.predict(image_path)
-    return age_result, gender_result, race_result
-
-
-async def race() -> str:
-    return "European"
+    try:
+        detector = AgeGenderRaceDetector(predictor_path)
+        age_result, gender_result, race_result = detector.predict(image_path)
+        return age_result, gender_result, race_result
+    except Exception as e:
+        print(f"Error in gender_age_race function: {e}")
