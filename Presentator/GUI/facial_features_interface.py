@@ -1,4 +1,4 @@
-from video_landmarks import FaceDetector, EyeColorDetector, GlassesDetector, AgeGenderRaceDetector, HairColorDetector
+from facial_features_detectors import FaceDetector, EyeColorDetector, GlassesDetector, AgeGenderRaceDetector, HairColorDetector
 import os
 
 
