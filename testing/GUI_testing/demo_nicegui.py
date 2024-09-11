@@ -48,26 +48,8 @@ placeholder = Response(content=base64.b64decode(black_1px.encode('ascii')), medi
 # OpenCV is used to access the webcam.
 video_capture = cv2.VideoCapture(0)
 
-frame_counter = 0
-
-
-def convert(frame: np.ndarray) -> bytes:
-    _, imencode_image = cv2.imencode('.jpg', frame)
-    return imencode_image.tobytes()
-
-
-def detect_and_draw_landmarks(frame, draw_landmarks: bool):
-    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-    rects = detector(gray, 0)
-    for rect in rects:
-        shape = predictor(gray, rect)
-        shape = face_utils.shape_to_np(shape)
-
-        if draw_landmarks:
-            for (x, y) in shape:
-                cv2.circle(frame, (x, y), 1, (0, 255, 0), -1)
-
-    return frame
+draw_landmarks_state = False
+state = True
 
 
 @app.get('/video/frame')
@@ -84,17 +66,6 @@ async def grab_video_frame() -> Response:
     else:
         jpeg = convert(frame)
         return Response(content=jpeg, media_type="image/jpeg")
-
-
-draw_landmarks_state = False
-state = True
-
-
-async def all_tasks():
-    await asyncio.sleep(0.1)
-
-    await neural_networks()
-    await image_processing()
 
 
 async def image_processing():
@@ -145,15 +116,15 @@ async def neural_networks():
     await asyncio.sleep(0.1)
 
     # FACIAL HAIR TASK
-    try:
-        print("Starting facial_hair function")
-        facial_hair_task = asyncio.create_task(facial_hair())
-        facial_hair_result = await facial_hair_task
-        print(f"facial_hair result: {facial_hair_result}")
-        print("_________________________________________________________________________________________________")
-        print()
-    except Exception as e:
-        print(f"Error in neural_networks - facial_hair: {e}")
+    # try:
+    #     print("Starting facial_hair function")
+    #     facial_hair_task = asyncio.create_task(facial_hair())
+    #     facial_hair_result = await facial_hair_task
+    #     print(f"facial_hair result: {facial_hair_result}")
+    #     print("_________________________________________________________________________________________________")
+    #     print()
+    # except Exception as e:
+    #     print(f"Error in neural_networks - facial_hair: {e}")
 
     # AGE GENDER RACE TASK
     try:
@@ -166,7 +137,7 @@ async def neural_networks():
     except Exception as e:
         print(f"Error in neural_networks - age_gender_race: {e}")
 
-    facial_hair_label.set_text(facial_hair_result)
+    # facial_hair_label.set_text(facial_hair_result)
     age_label.set_text(age_gender_race_result[0])
     gender_label.set_text(age_gender_race_result[1])
     race_label.set_text(age_gender_race_result[2])
@@ -188,8 +159,26 @@ async def button_clicked():
     await asyncio.create_task(image_processing())
     await asyncio.create_task(neural_networks())
 
-
     video_image.set_visibility(True)
+
+
+def convert(frame: np.ndarray) -> bytes:
+    _, imencode_image = cv2.imencode('.jpg', frame)
+    return imencode_image.tobytes()
+
+
+def detect_and_draw_landmarks(frame, draw_landmarks: bool):
+    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    rects = detector(gray, 0)
+    for rect in rects:
+        shape = predictor(gray, rect)
+        shape = face_utils.shape_to_np(shape)
+
+        if draw_landmarks:
+            for (x, y) in shape:
+                cv2.circle(frame, (x, y), 1, (0, 255, 0), -1)
+
+    return frame
 
 
 def on_checkbox_change(value):

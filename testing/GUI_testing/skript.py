@@ -14,8 +14,8 @@ predictor_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '
 async def eye_color() -> str:
     try:
         eye_color_detector = EyeColorDetector(predictor_path)
-        # result_eye_color = eye_color_detector.detect_eye_color(image_path)
-        result_eye_color = "EyeColorDetector"
+        result_eye_color = eye_color_detector.detect_eye_color(image_path)
+        # result_eye_color = "EyeColorDetector"
         return result_eye_color
     except Exception as e:
         print(f"Error in eye_color function: {e}")
@@ -32,13 +32,13 @@ async def glasses() -> str:
         print(f"Error in glasses function: {e}")
 
 
-async def facial_hair() -> str:
-    try:
-        beard_detector = BeardDetector(predictor_path)
-        result_beard = beard_detector.process_image(image_path)
-        return result_beard
-    except Exception as e:
-        print(f"Error in facial_hair function: {e}")
+# async def facial_hair() -> str:
+#     try:
+#         beard_detector = BeardDetector(predictor_path)
+#         result_beard = beard_detector.process_image(image_path)
+#         return result_beard
+#     except Exception as e:
+#         print(f"Error in facial_hair function: {e}")
     # return "None"
 
 

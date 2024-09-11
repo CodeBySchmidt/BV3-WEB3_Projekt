@@ -74,8 +74,8 @@ class GlassesDetector:
 
 if __name__ == "__main__":
 
-    predictor_path = "../testing/Utils/shape_predictor_68_face_landmarks.dat"
+    predictor_path = "../../Utils/shape_predictor_68_face_landmarks.dat"
     glasses_detector = GlassesDetector(predictor_path)
 
-    image_path = "screenshot.jpg"
+    image_path = "../../Utils/img/glasses/1.jpg"
     glasses_detector.display_results(image_path)

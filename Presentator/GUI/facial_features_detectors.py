@@ -63,20 +63,6 @@ class GlassesDetector(FaceDetector):
             else:
                 return "No"
 
-    # def display_results(self, image_path):
-    #     if not os.path.isfile(image_path):
-    #         return "Image does not exist"
-    #
-    #     img = dlib.load_rgb_image(image_path)
-    #     glasses = self.detect_glasses(img)
-    #
-    #     if glasses == "No face detected":
-    #         return "No face detected"
-    #     elif glasses == True:
-    #         return "Yes"
-    #     else:
-    #         return "No"
-
     def detect_face(self, image):
 
         gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
@@ -295,8 +281,6 @@ class EyeColorDetector(FaceDetector):
 
         color_finder = ColorFinder()
         color_name = color_finder.find_color(array1)
-        print(color_name)
-        print(hex_color)
         return hex_color, color_name
 
     def detect_face(self, image):
@@ -417,10 +401,9 @@ class AgeGenderRaceDetector(FaceDetector):
             pred_race_label = race_mapping[pred_race]
             return pred_age_label, pred_gender_label, pred_race_label
 
-
-class BeardDetector(FaceDetector):
-    def __init__(self, predictor_path: str):
-        super().__init__(predictor_path)
+# class BeardDetector(FaceDetector):
+#     def __init__(self, predictor_path: str):
+#         super().__init__(predictor_path)
 
 
 # Alter Code
