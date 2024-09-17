@@ -30,7 +30,7 @@ async def glasses() -> str:
 
 
 async def facial_hair() -> str:
-    return "None"
+    return "Yes"
 
 
 async def hair_color():

@@ -237,8 +237,8 @@ ui.query("body").classes("primary")
 with ui.grid(rows=6, columns=16).classes("gap-5 w-full p-5").style("height: 95vh;"):
     # Erste Zeile -> Logo
     with ui.element("container_logo").classes(
-            "row-start-1 row-span-1 col-span-5 h-auto rounded secondary flex justify-center items-center overflow-hidden"):
-        ui.label("Logo").classes("text-white flex justify-center items-center text-3xl")
+            "row-start-1 row-span-1 col-span-5 h-auto rounded flex justify-center items-center overflow-hidden"):
+        ui.image("Logo.svg").classes("w-full")
 
     with ui.element("container_outputs").classes("row-start-2 row-span-4 col-span-5 rounded"):
         with ui.grid(rows=4, columns=2).classes("h-full w-full gap-5"):
