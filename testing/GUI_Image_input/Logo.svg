@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Ebene_2" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 1418.53 221.1">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: #424242;
+      }
+
+      .cls-1, .cls-2 {
+        font-family: Orbitron-Black, Orbitron;
+        font-size: 199.19px;
+        font-variation-settings: 'wght' 900;
+        font-weight: 800;
+        letter-spacing: .02em;
+      }
+
+      .cls-3 {
+        filter: url(#drop-shadow-1);
+      }
+
+      .cls-2 {
+        fill: #fff;
+      }
+    </style>
+    <filter id="drop-shadow-1" x="-1.53" y="-1.53" width="1435.68" height="238.32" filterUnits="userSpaceOnUse">
+      <feOffset dx="7" dy="7"/>
+      <feGaussianBlur result="blur" stdDeviation="2.83"/>
+      <feFlood flood-color="#1d1d1b" flood-opacity=".5"/>
+      <feComposite in2="blur" operator="in"/>
+      <feComposite in="SourceGraphic"/>
+    </filter>
+  </defs>
+  <g id="Ebene_11">
+    <g id="Logo_V1" class="cls-3">
+      <text class="cls-1" transform="translate(21.31 171.3) scale(1.09 1)"><tspan x="0" y="0">VISOTRAIN</tspan></text>
+      <text class="cls-2" transform="translate(0 171.3) scale(1.09 1)"><tspan x="0" y="0">VISOTRAIN</tspan></text>
+    </g>
+  </g>
+</svg>

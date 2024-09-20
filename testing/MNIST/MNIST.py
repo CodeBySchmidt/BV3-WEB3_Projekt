@@ -106,7 +106,7 @@ def train_model():
     print('Starting training...')
     model.apply(init_weights)  # Initial weights
 
-    epochs = 50
+    epochs = 200
     arrPlotX = []
     train_losses, train_accuracies = [], []
     test_losses, test_accuracies = [], []
@@ -201,8 +201,8 @@ def predict_single_image(model, image_path):
     with torch.no_grad():
         prediction = model(img_tensor.to(device))  # Ausgabe der Logits
         predicted_label = prediction.argmax(dim=-1).item()  # Nimm die Klasse mit dem höchsten Wert
-        print(f"Logits: {prediction}")
-    print(f"Predicted Label: {predicted_label}")
+        # print(f"Logits: {prediction}")
+        print(f"Predicted Label: {predicted_label}")
 
     return predicted_label
 
@@ -215,14 +215,14 @@ def load_model_and_predict(image_path):
     # Trainierte Gewichte laden
     model.load_state_dict(torch.load('nnMnist_exp01.pth', map_location=device))
 
-    check_model_weights(model)
+    # check_model_weights(model)
 
     # Bild vorhersagen
     return predict_single_image(model, image_path)
 
 
 # Überprüfe die Modell-Gewichte direkt nach dem Laden
-def check_model_weights(model, path='nnMnist_exp01.pt'):
+def check_model_weights(model, path='nnMnist_exp01.pth'):
     model.load_state_dict(torch.load(path, map_location=device))
     print("Model weights loaded successfully.")
     for name, param in model.named_parameters():
