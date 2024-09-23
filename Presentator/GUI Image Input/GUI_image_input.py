@@ -22,6 +22,7 @@ async def image_processing():
     global glasses_result
 
     await asyncio.sleep(0.1)  # Async sleep anstelle von blockierendem sleep
+    ui.notify('Image processing task has started...')
 
     hair_hex, hair_color_name, hair_typ = await run.cpu_bound(hair_color, save_path)  # await hair_color(save_path)
 
@@ -42,11 +43,13 @@ async def image_processing():
     output_3_color.style(f"background-color: {hair_hex} !important;")
     ui.timer(1.0, lambda: output_3_color.set_text(hair_hex.upper()))
 
+    ui.notify('Image processing task is finished')
+
 
 async def neural_networks():
     global facial_hair_result, age_gender_race_result
     await asyncio.sleep(0.1)
-
+    ui.notify('Neural network task has started...')
     facial_hair_result = await run.cpu_bound(facial_hair)  # facial_hair()
     age_gender_race_result = await run.cpu_bound(gender_age_race, save_path)
 
@@ -55,18 +58,16 @@ async def neural_networks():
     ui.timer(1.0, lambda: age_label.set_text(age_gender_race_result[0]))
     ui.timer(1.0, lambda: gender_label.set_text(age_gender_race_result[1]))
     ui.timer(1.0, lambda: race_label.set_text(age_gender_race_result[2]))
-
+    ui.notify('Neural network task is finished')
 
 async def button_clicked():
-    ui.notify('Asynchronous task started')
+    ui.notify('Calculating has started!')
 
     await image_processing()
-
-    ui.notify('IMAGE PROCESSING task finished')
-
     await neural_networks()
-    ui.notify('NEURAL task finished')
 
+    await asyncio.sleep(1)
+    ui.notify('All inputs are updated now')
 
 # Definiere benutzerdefinierte CSS-Klassen für die Farben
 ui.add_css('''
@@ -129,9 +130,9 @@ def handle_upload(event):
     else:
         # Zeige das Bild zum ersten Mal an
         ui.label("Your Picture").classes("text-3xl p-3").style("color: white; text-align: center;")
-        with ui.element("display_container").style('display: flex; justify-content: center; height: 550px'):
+        with ui.element("display_container").classes("pb-12").style('display: flex; justify-content: center;'):
             # ui.label("Our Picture").classes("text-3xl").style("color: white;")
-            image_display = ui.image(f'{save_path}').classes("w-1/2").style("object-fit: contain;")
+            image_display = ui.image(f'{save_path}').style("object-fit: contain; height: 50%; width: 50%;")
             print(save_path)
 
 
@@ -139,10 +140,12 @@ ui.query("body").classes("primary")
 
 ui.image("Logo.svg").classes("w-full")
 
-with ui.grid(columns=2).classes("w-full h-dvh pb-3"):
+with ui.grid(columns=2).classes("w-full h-full pb-3"):
 
-    with ui.element("OUTPUTS").classes("w-full h-dvh"):
+    with ui.element("OUTPUTS").classes("w-full h-full"):
+
         with ui.grid(rows=6, columns=2).classes("h-full w-full gap-5"):
+
             # Erste Zeile Hair Color
             with ui.element("container_output_1").classes(
                     "rounded col-span-2 row-start-1 grid grid-cols-2 gap-2 secondary overflow-hidden drop-shadow-[10px_12px_3px_rgba(0,0,0,0.25)]"):

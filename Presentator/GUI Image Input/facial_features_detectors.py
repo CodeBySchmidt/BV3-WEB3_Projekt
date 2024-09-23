@@ -49,7 +49,7 @@ class GlassesDetector(FaceDetector):
         faces = self.detect_face(img)
 
         if faces is None:
-            return "No face detected"
+            return "NO FACE DETECTED"
 
         else:
             face = faces[0]
@@ -101,7 +101,7 @@ def calculate_median_color(image):
                ein Graustufenbild ist.
     """
     if image is None:
-        return "No Face detected", "No Face detected"
+        return "NO FACE DETECTED", "NO FACE DETECTED"
 
     if len(image.shape) == 3:
         median_r = np.median(image[:, :, 0].flatten())
@@ -142,13 +142,13 @@ class HairColorDetector(FaceDetector):
 
     def find_hair_color(self, image_path):
         if not os.path.isfile(image_path):
-            return "Image does not exist", "Image does not exist"
+            return "Image does not exist", "Image does not exist", "Image does not exist"
 
         image = dlib.load_rgb_image(image_path)
         faces = self.detect_face(image)
 
         if faces is None:
-            return "No face detected", "No face detected"
+            return "NO FACE DETECTED", "NO FACE DETECTED", "NO FACE DETECTED"
 
         else:
             gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -177,16 +177,16 @@ class HairColorDetector(FaceDetector):
                                 (median_color_hair[2] - median_color_skin[2]) ** 2)
 
             # Schwellwert für den Farbunterschied
-            threshold = 60
+            threshold = 80
 
             hair_hex = rgb_to_hex(median_color_hair)
             color_finder = ColorFinder()
             color_name = color_finder.find_color(median_color_skin)
 
             if hair_diff < threshold:
-                return hair_hex, color_name, "Probably a bald spot or a bald head"
+                return hair_hex, color_name, "Maybe bald or similar skin and hair color"
             else:
-                return hair_hex, color_name, "Possible not bald or balding"
+                return hair_hex, color_name, "Not bald or balding"
 
 
 class EyeColorDetector(FaceDetector):
@@ -194,26 +194,16 @@ class EyeColorDetector(FaceDetector):
         super().__init__(predictor_path)
         self.flag = 0
 
-    def find_color(self, requested_colour):
-        min_colours = {}
-        for name, key in webcolors.CSS3_HEX_TO_NAMES.items():
-            r_c, g_c, b_c = webcolors.hex_to_rgb(name)
-            bd = (b_c - requested_colour[0]) ** 2
-            gd = (g_c - requested_colour[1]) ** 2
-            rd = (r_c - requested_colour[2]) ** 2
-            min_colours[(rd + gd + bd)] = key
-        closest_name = min_colours[min(min_colours.keys())]
-        return closest_name
-
     def detect_eye_color(self, image_path):
         if not os.path.isfile(image_path):
-            return "Image does not exist"
+            return "Image does not exist", "Image does not exist"
 
         image = dlib.load_rgb_image(image_path)
 
         faces, gray, img_rgb = self.detect_face(image)
+
         if faces is None:
-            return "No face detected"
+            return "NO FACE DETECTED", "NO FACE DETECTED"
 
         for face in faces:
             eyes = []  # Liste zur Speicherung der Augen
@@ -254,7 +244,7 @@ class EyeColorDetector(FaceDetector):
                     break
 
         if roi_eye.size == 0:
-            return "Eye region not found"
+            return "Eye region not found", "Eye region not found"
 
         x = roi_eye.shape
         row = x[0]
@@ -335,7 +325,7 @@ class AgeGenderRaceDetector(FaceDetector):
         detected_face = self.detect_face(image_loaded)
 
         if detected_face is None:
-            return "No face detected", "No face detected", "No face detected"
+            return "NO FACE DETECTED", "NO FACE DETECTED", "NO FACE DETECTED"
 
         else:
             # image_path = self.image_path

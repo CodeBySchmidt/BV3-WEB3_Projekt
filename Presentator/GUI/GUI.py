@@ -91,9 +91,9 @@ state = True
 
 async def image_processing():
     await asyncio.sleep(0.1)  # Async sleep anstelle von blockierendem sleep
-
+    ui.notify('Image processing task has started...')
     # Dummy Funktionen für Bildverarbeitung
-    hair_hex, hair_color_name, hair_typ = await hair_color()
+    hair_color_hex, hair_color_name, hair_typ = await hair_color()
 
     eye_color_hex, eye_color_name = await eye_color()
     glasses_result = await glasses()
@@ -101,20 +101,21 @@ async def image_processing():
     # Labels aktualisieren, um den neuen Wert anzuzeigen
     hair_typ_label.set_text(hair_typ)
     glasses_label.set_text(glasses_result)
-    hair_color_label.set_text(hair_color_name)
-    eye_color_label.set_text(eye_color_name)
+    hair_color_label.set_text(hair_color_hex)
+    eye_color_label.set_text(eye_color_hex)
 
     # Hintergrundfarben der Labels aktualisieren
     output_1_color.style(f"background-color: {eye_color_hex} !important;")
     output_1_color.set_text(eye_color_hex.upper())
     # Hair Color
-    output_3_color.style(f"background-color: {hair_hex} !important;")
-    output_3_color.set_text(hair_hex.upper())
+    output_3_color.style(f"background-color: {hair_color_hex} !important;")
+    output_3_color.set_text(hair_color_hex.upper())
+    ui.notify('Image processing task is finished')
 
 
 async def neural_networks():
     await asyncio.sleep(0.1)
-
+    ui.notify('Neural network task has started...')
     facial_hair_result = await facial_hair()
     age_gender_race_result = await gender_age_race()
 
@@ -123,6 +124,7 @@ async def neural_networks():
     age_label.set_text(age_gender_race_result[0])
     gender_label.set_text(age_gender_race_result[1])
     race_label.set_text(age_gender_race_result[2])
+    ui.notify('Neural network task is finished')
 
 
 # Methode, die aufgerufen wird, wenn die Checkbox geändert wird
@@ -148,11 +150,15 @@ async def button_clicked():
 
     if state:
         video_image.set_visibility(False)
+    ui.notify('Calculating has started!')
 
-    await asyncio.create_task(image_processing())
-    await asyncio.create_task(neural_networks())
+    await image_processing()
+    await neural_networks()
 
     video_image.set_visibility(True)
+
+    await asyncio.sleep(1)
+    ui.notify('All inputs are updated now')
 
 
 def get_color_name_or_hex(input_value):
@@ -338,7 +344,7 @@ with ui.grid(rows=6, columns=16).classes("gap-5 w-full p-5").style("height: 95vh
 # A timer constantly updates the source of the image.
 # Because data from same paths are cached by the browser,
 # we must force an update by adding the current timestamp to the source.
-ui.timer(interval=0.04, callback=lambda: video_image.set_source(f'/video/frame?{time.time()}'))
+ui.timer(interval=0.02, callback=lambda: video_image.set_source(f'/video/frame?{time.time()}'))
 
 
 async def disconnect() -> None:

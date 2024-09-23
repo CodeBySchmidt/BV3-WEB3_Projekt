@@ -10,12 +10,6 @@ gender_proto = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'Ut
 gender_model = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'Utils', 'gender_net.caffemodel'))
 predictor_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'Utils', 'shape_predictor_68_face_landmarks.dat'))
 
-# Wird eventuell gar nicht benötigt
-# def get_screenshot():
-#     detector = FaceLandmarkDetector(predictor_path)
-#     image = detector.take_screenshot("screenshot.jpg")
-#     return image
-
 
 async def eye_color() -> str:
     eye_color_detector = EyeColorDetector(predictor_path)
