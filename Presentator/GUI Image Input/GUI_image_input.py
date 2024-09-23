@@ -4,7 +4,7 @@ import os
 
 from nicegui import Client, app, core, ui, run
 from facial_features_interface import *
-
+from PIL import Image, ExifTags
 
 # Globale Referenz auf das Bild-Widget
 save_path = ""
@@ -60,6 +60,7 @@ async def neural_networks():
     ui.timer(1.0, lambda: race_label.set_text(age_gender_race_result[2]))
     ui.notify('Neural network task is finished')
 
+
 async def button_clicked():
     ui.notify('Calculating has started!')
 
@@ -68,6 +69,7 @@ async def button_clicked():
 
     await asyncio.sleep(1)
     ui.notify('All inputs are updated now')
+
 
 # Definiere benutzerdefinierte CSS-Klassen für die Farben
 ui.add_css('''
@@ -99,10 +101,43 @@ ui.add_css('''
     .shadow-color {
         box-shadow: 8px 8px 10px 2px rgba(0, 0, 0, 0.50);
     }
+    
+    .no-scrollbar {
+        scrollbar-width: none;
+        -ms-overflow-stlye: none;
+        
+    }
+    
+    .no-scrollbar:: -webkit-scrollbar {
+        display: none;
+    }
 
 
 
 ''')
+
+
+def correct_image_orientation(image):
+    try:
+        for orientation in ExifTags.TAGS.keys():
+            if ExifTags.TAGS[orientation] == 'Orientation':
+                break
+
+        exif = image._getexif()
+        if exif is not None:
+            exif = dict(exif.items())
+            orientation_value = exif.get(orientation, 1)
+
+            if orientation_value == 3:
+                image = image.rotate(180, expand=True)
+            elif orientation_value == 6:
+                image = image.rotate(270, expand=True)
+            elif orientation_value == 8:
+                image = image.rotate(90, expand=True)
+    except Exception as e:
+        print(e)
+
+    return image
 
 
 def handle_upload(event):
@@ -118,9 +153,21 @@ def handle_upload(event):
     new_filename = f'current_image_{random_param}.png'
     save_path = os.path.join(save_folder, new_filename)
 
-    # Speichere die Datei mit dem neuen Namen
-    with open(save_path, 'wb') as f:
-        f.write(event.content.read())
+    # # Speichere die Datei mit dem neuen Namen
+    # with open(save_path, 'wb') as f:
+    #     image = correct_image_orientation(event.content.read())
+    #     image.write(event.content.read())
+
+    try:
+
+        image = Image.open(event.content)
+
+        image = correct_image_orientation(image)
+
+        image.save(save_path)
+
+    except Exception as e:
+        print(e)
 
     # Wenn bereits ein Bild angezeigt wird, ersetze es
     if image_display is not None:
@@ -136,16 +183,13 @@ def handle_upload(event):
             print(save_path)
 
 
-ui.query("body").classes("primary")
+ui.query("body").classes("primary no-scrollbar")
 
 ui.image("Logo.svg").classes("w-full")
 
 with ui.grid(columns=2).classes("w-full h-full pb-3"):
-
     with ui.element("OUTPUTS").classes("w-full h-full"):
-
         with ui.grid(rows=6, columns=2).classes("h-full w-full gap-5"):
-
             # Erste Zeile Hair Color
             with ui.element("container_output_1").classes(
                     "rounded col-span-2 row-start-1 grid grid-cols-2 gap-2 secondary overflow-hidden drop-shadow-[10px_12px_3px_rgba(0,0,0,0.25)]"):
@@ -162,16 +206,20 @@ with ui.grid(columns=2).classes("w-full h-full pb-3"):
                         "height: 80%; width: 80%")
 
             # Zweite Zeile -> Hair Type
-            with ui.element("container_output_2").classes("rounded col-span-2 row-start-2 grid gap-2 secondary overflow-hidden drop-shadow-[10px_12px_3px_rgba(0,0,0,0.25)]"):
+            with ui.element("container_output_2").classes(
+                    "rounded col-span-2 row-start-2 grid gap-2 secondary overflow-hidden drop-shadow-[10px_12px_3px_rgba(0,0,0,0.25)]"):
                 # output_2 links
-                with ui.element("output_2").classes("col-start-1 col-span-1 row-start-1 row-span-1 flex flex-col justify-center items-start pl-10"):
+                with ui.element("output_2").classes(
+                        "col-start-1 col-span-1 row-start-1 row-span-1 flex flex-col justify-center items-start pl-10"):
                     hair_typ_label = ui.label("None").classes("text-3xl").style("color: white;")
                     ui.label("Hair Type").classes("text-lg").style("color: white;")
 
             # Dritte Zeile -> Eye Color
-            with ui.element("container_output_3").classes("rounded col-span-2 row-start-3 grid grid-cols-2 gap-2 secondary overflow-hidden drop-shadow-[10px_12px_3px_rgba(0,0,0,0.25)]"):
+            with ui.element("container_output_3").classes(
+                    "rounded col-span-2 row-start-3 grid grid-cols-2 gap-2 secondary overflow-hidden drop-shadow-[10px_12px_3px_rgba(0,0,0,0.25)]"):
                 # output_1 links
-                with ui.element("output_1").classes("col-start-1 col-span-1 row-start-1 row-span-1 flex flex-col justify-center items-start pl-10"):
+                with ui.element("output_1").classes(
+                        "col-start-1 col-span-1 row-start-1 row-span-1 flex flex-col justify-center items-start pl-10"):
                     eye_color_label = ui.label("None").classes("text-3xl").style("color: white;")
                     ui.label("Eye Color").classes("text-lg").style("color: white;")
 
@@ -208,7 +256,8 @@ with ui.grid(columns=2).classes("w-full h-full pb-3"):
                 ui.label("Gender").classes("text-lg").style("color: white;")
 
             # Dritte Spalte -> Race
-            with ui.element("container_output_race").classes("rounded col-span-2 row-start-6 grid gap-2 secondary overflow-hidden py-6 drop-shadow-[10px_12px_3px_rgba(0,0,0,0.25)]"):
+            with ui.element("container_output_race").classes(
+                    "rounded col-span-2 row-start-6 grid gap-2 secondary overflow-hidden py-6 drop-shadow-[10px_12px_3px_rgba(0,0,0,0.25)]"):
                 # output_race
                 with ui.element("output_gender").classes("flex flex-col justify-center items-start pl-10"):
                     race_label = ui.label("None").classes("text-3xl").style("color: white;")
@@ -218,6 +267,5 @@ with ui.grid(columns=2).classes("w-full h-full pb-3"):
 
     with ui.element("container_upload").classes("w-full").style("height: 800px"):
         ui.upload(on_upload=handle_upload, label="Bild hochladen").classes("w-full")
-
 
 ui.run()
